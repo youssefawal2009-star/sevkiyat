@@ -2,12 +2,13 @@
 <html lang="tr">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' blob: data: https://paojawgjfckmavwzwzhl.supabase.co wss://paojawgjfckmavwzwzhl.supabase.co; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob: https://tile.openstreetmap.org; connect-src 'self' blob: data: https://paojawgjfckmavwzwzhl.supabase.co wss://paojawgjfckmavwzwzhl.supabase.co https://api.zippopotam.us https://nominatim.openstreetmap.org https://routing.openstreetmap.de https://router.project-osrm.org; object-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="referrer" content="no-referrer">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#ffffff">
 <title>Sevkiyat Planlayıcı</title>
 <meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="lib/leaflet-1.9.4.css">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600&display=swap">
@@ -134,6 +135,11 @@ td input[type=text],td input[type=number],td select{font-size:15px;padding:8px 1
 .stat b{display:block;font-weight:800;font-size:24px;letter-spacing:-.01em;font-variant-numeric:tabular-nums}
 .stat small{color:var(--muted);font-weight:700;font-size:12px;text-transform:uppercase;letter-spacing:.06em}
 .map{width:100%;max-width:100%;height:auto;background:var(--soft);border-radius:24px}
+.lmap{height:380px;overflow:hidden;z-index:0;isolation:isolate;font-family:var(--f-body)}
+@media (max-width:600px){.lmap{height:320px}}
+.mk{display:grid;place-items:center;width:26px;height:26px;border-radius:50%;background:var(--accent);color:#fff;font:800 12px var(--f-body);border:2px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.25)}
+.mk-s{border-radius:6px;background:var(--fg)}
+.lmap .leaflet-control-attribution{font-size:10px}
 .cards{display:grid;gap:14px}
 .vcard{display:grid;grid-template-columns:auto 1fr;gap:16px;align-items:center;background:var(--surface);border:1.5px solid var(--line);border-radius:30px;padding:18px 22px;cursor:pointer;text-align:left;font:inherit;color:inherit;width:100%;box-shadow:var(--shadow)}
 .vcard:hover{border-color:color-mix(in srgb,var(--accent) 45%,var(--line))}
@@ -230,6 +236,7 @@ td input[type=text],td input[type=number],td select{font-size:15px;padding:8px 1
 <div class="wrap"><main id="app"></main></div>
 <div id="net" class="net" hidden></div>
 <script src="lib/supabase-2.117.3.js"></script>
+<script src="lib/leaflet-1.9.4.js"></script>
 
 <script>
 /* ---------- Sabitler ---------- */
@@ -303,7 +310,7 @@ document.addEventListener("visibilitychange",()=>{if(document.visibilityState===
 window.addEventListener("online",refresh);
 document.addEventListener("focusout",()=>setTimeout(()=>{if(needRender&&!busy())softRender()},50));
 const A=id=>S.addresses.find(a=>a.id===id);
-const geo=a=>PC[a.cc+"-"+a.code];
+const geo=a=>a&&a.lat!=null?{city:a.city,lat:a.lat,lon:a.lon}:PC[a.cc+"-"+a.code]||{city:"",lat:SUBEN.lat,lon:SUBEN.lon};
 const owner=id=>OWNERS.find(o=>o.id===id)||OWNERS[0];
 const fmtT=n=>(Math.round(n*10)/10).toLocaleString("tr-TR",{minimumFractionDigits:1,maximumFractionDigits:1});
 const fmtKm=n=>Math.round(n).toLocaleString("tr-TR")+" km";
@@ -314,8 +321,27 @@ const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&
 
 /* ---------- Mesafe ve rota ---------- */
 function hav(p,q){const R=6371,r=Math.PI/180,dl=(q.lat-p.lat)*r,dn=(q.lon-p.lon)*r;const h=Math.sin(dl/2)**2+Math.cos(p.lat*r)*Math.cos(q.lat*r)*Math.sin(dn/2)**2;return 2*R*Math.asin(Math.sqrt(h))}
-const ROAD=1.3; // deneme: kuş uçuşu × 1,3 ≈ karayolu
-const dist=(p,q)=>hav(p,q)*ROAD;
+const ROAD=1.3; // internet yoksa tahmin: kuş uçuşu × 1,3
+/* Gerçek karayolu km: OpenStreetMap yol servisi (anahtarsız, ücretsiz). Sonuçlar telefonda saklanır. */
+const KM_KEY="sevkiyat-km", ROUTERS=["https://routing.openstreetmap.de/routed-car","https://router.project-osrm.org"];
+const pk=p=>p.lat.toFixed(4)+","+p.lon.toFixed(4);
+let KM={};try{KM=JSON.parse(localStorage.getItem(KM_KEY))||{}}catch(e){}
+function saveKm(){try{const k=Object.keys(KM);if(k.length>60000)k.slice(0,k.length-60000).forEach(x=>delete KM[x]);localStorage.setItem(KM_KEY,JSON.stringify(KM))}catch(e){}}
+const dist=(p,q)=>{if(p===q)return 0;const v=KM[pk(p)+">"+pk(q)];return v!=null?v:hav(p,q)*ROAD};
+async function osrm(path){let last;for(const base of ROUTERS){try{const ctl=new AbortController(),t=setTimeout(()=>ctl.abort(),15000);
+  const r=await fetch(base+path,{signal:ctl.signal});clearTimeout(t);if(!r.ok)throw new Error(r.status);const j=await r.json();if(j.code!=="Ok")throw new Error(j.code);return j}catch(e){last=e}}throw last}
+/* Verilen noktalar arasındaki eksik km'leri tek seferde çeker */
+async function ensureKm(points){
+  const uniq=[...new Map(points.filter(Boolean).map(p=>[pk(p),p])).values()];
+  const miss=uniq.filter(a=>uniq.some(b=>a!==b&&KM[pk(a)+">"+pk(b)]==null));if(!miss.length)return true;
+  const chunk=40,groups=[];for(let i=0;i<uniq.length;i+=chunk)groups.push(uniq.slice(i,i+chunk));
+  let ok=true;
+  for(const A1 of groups)for(const B1 of groups){
+    if(!A1.some(a=>B1.some(b=>a!==b&&KM[pk(a)+">"+pk(b)]==null)))continue;
+    const pts=A1===B1?A1:A1.concat(B1),src=A1.map((_,i)=>i),dst=B1.map((_,i)=>A1===B1?i:A1.length+i);
+    try{const j=await osrm(`/table/v1/driving/${pts.map(p=>p.lon.toFixed(5)+","+p.lat.toFixed(5)).join(";")}?annotations=distance&sources=${src.join(";")}&destinations=${dst.join(";")}`);
+      j.distances.forEach((row,i)=>row.forEach((m,k)=>{if(m!=null)KM[pk(A1[i])+">"+pk(B1[k])]=m/1000}))}catch(e){console.warn("km alınamadı",e);ok=false}}
+  saveKm();return ok}
 function pathLen(pts){let s=0,prev=SUBEN;for(const p of pts){s+=dist(prev,p);prev=p}return s}
 /* Suben'den başlayıp son adreste biten en kısa sıra: en yakın komşu + 2-opt + taşıma iyileştirmesi */
 function bestOrder(ids){
@@ -482,7 +508,7 @@ function vEkle(){
      <div class="choices">${OWNERS.map(o=>`<button type="button" class="choice" data-act="owner" data-id="${o.id}" aria-pressed="${f.owner===o.id}">${o.name}</button>`).join("")}</div></div></div>
    <div class="step ${st(s2,s1&&!s2)}"><div class="n">${s2?"✓":"2"}</div><div class="body form-col"><div class="q">Posta kodu</div>
      <input type="text" id="code" inputmode="text" autocapitalize="characters" autocomplete="off" spellcheck="false" value="${esc(f.code)}">
-     ${f.check&&!f.check.ok?`<div class="msg ${f.check.multi?"warn":"bad"}">${esc(f.check.text)}</div>`:""}
+     ${f.check&&!f.check.ok&&!f.check.pending?`<div class="msg ${f.check.multi?"warn":"bad"}">${esc(f.check.text)}</div>`:""}
      ${f.check&&f.check.multi?`<div class="choices multi">${f.check.multi.map(m=>`<button type="button" class="choice" data-act="pickcc" data-id="${m.cc}">${m.city} · ${COUNTRIES[m.cc]}</button>`).join("")}</div>`:""}</div></div>
    <div class="step ${st(s3,s2&&!s3)}"><div class="n">${s3?"✓":"3"}</div><div class="body form-col"><div class="q">Bu adres kaç takımlık?</div>
      <input type="text" id="takim" inputmode="decimal" autocomplete="off" value="${esc(f.takim)}"></div></div>
@@ -491,18 +517,64 @@ function vEkle(){
   </form>
   `;
 }
-function checkCode(){
+/* Posta kodu: tüm Avrupa çevrimiçi kontrol edilir (Zippopotam.us, anahtarsız). Sonuçlar telefonda saklanır. */
+const PCQ_KEY="sevkiyat-pc";let PCQ={};try{PCQ=JSON.parse(localStorage.getItem(PCQ_KEY))||{}}catch(e){}
+function zipPath(cc,code){const d=code.replace(/\D/g,"");
+  if(cc==="PL")return d.length===5?d.slice(0,2)+"-"+d.slice(2):null;
+  if(cc==="CZ"||cc==="SK")return d.length===5?d.slice(0,3)+"%20"+d.slice(3):null;
+  if(cc==="LU")return d.length===4?"L-"+d:null;
+  if(cc==="NL")return code.slice(0,4);
+  return code}
+/* Nominatim (OpenStreetMap adres arama): saniyede en fazla 1 istek kuralına uyulur */
+let nomiLast=0;
+async function nomi(params){const wait=nomiLast+1100-Date.now();if(wait>0)await new Promise(r=>setTimeout(r,wait));nomiLast=Date.now();
+  const r=await fetch("https://nominatim.openstreetmap.org/search?format=jsonv2&addressdetails=1&accept-language=xx&"+params,{referrerPolicy:"strict-origin-when-cross-origin"});
+  if(!r.ok)throw new Error(r.status);return r.json()}
+const nomiCity=ad=>ad&&(ad.city||ad.town||ad.village||ad.municipality||ad.county)||"";
+function nomiCode(cc,code){const d=code.replace(/\D/g,"");if(cc==="CZ"||cc==="SK")return d.slice(0,3)+" "+d.slice(3);if(cc==="PL")return d.slice(0,2)+"-"+d.slice(2);if(cc==="NL"&&code.length===6)return code.slice(0,4)+" "+code.slice(4);return code}
+async function lookupOne(cc,code){const k=cc+"-"+code;if(PCQ[k]!==undefined)return PCQ[k];
+  const path=zipPath(cc,code);if(!path)return null;
+  const r=await fetch(`https://api.zippopotam.us/${cc.toLowerCase()}/${path}`);
+  if(r.status===404)return null;if(!r.ok)throw new Error(r.status);
+  const j=await r.json(),pl=j.places&&j.places[0];if(!pl)return null;
+  return {city:pl["place name"].replace(/\s+-\s+dostava$/,""),lat:+(+pl.latitude).toFixed(4),lon:+(+pl.longitude).toFixed(4)}}
+/* Konumu ve şehir adını Nominatim'den iyileştir; olmazsa Zippopotam'ınki kalır */
+async function refine(cc,code,v){try{const j=await nomi(`countrycodes=${cc.toLowerCase()}&postalcode=${encodeURIComponent(nomiCode(cc,code))}&limit=1`);
+  if(j[0])return {city:nomiCity(j[0].address)||v.city,lat:+(+j[0].lat).toFixed(4),lon:+(+j[0].lon).toFixed(4)}}catch(e){}return v}
+function remember(cc,code,v){PCQ[cc+"-"+code]=v;try{localStorage.setItem(PCQ_KEY,JSON.stringify(PCQ))}catch(e){}}
+/* Zippopotam'da olmayan kodlar için tek Nominatim araması (tüm ülkeler birden) */
+async function nomiAll(code,ccs){const out=[];const seen=new Set();
+  const variants=[...new Set(ccs.map(cc=>nomiCode(cc,code)))];
+  for(const q of variants){try{const j=await nomi(`countrycodes=${ccs.map(c=>c.toLowerCase()).join(",")}&postalcode=${encodeURIComponent(q)}&limit=10`);
+    for(const x of j){const cc=(x.address&&x.address.country_code||"").toUpperCase();if(!ccs.includes(cc)||seen.has(cc))continue;
+      const pcode=String(x.address.postcode||"").toUpperCase().replace(/[\s-]/g,"").replace(/^L/,"");if(pcode&&pcode!==code.replace(/^L/,""))continue;
+      seen.add(cc);out.push({cc,city:nomiCity(x.address),lat:+(+x.lat).toFixed(4),lon:+(+x.lon).toFixed(4)})}}catch(e){}}
+  return out}
+async function checkCode(){
   const f=ui.form;const raw=document.getElementById("code").value;
-  const code=raw.toUpperCase().replace(/[\s-]/g,"");f.code=code;f.cc=null;
+  const code=raw.toUpperCase().replace(/[\s-]/g,"");f.code=code;f.cc=null;f.place=null;
   if(!code){f.check=null;render();return}
-  const hits=Object.keys(COUNTRIES).filter(cc=>PC[cc+"-"+code]).map(cc=>({cc,city:PC[cc+"-"+code].city}));
+  f.check={ok:false,pending:true};f.req=code;
+  const lux=/^L\d{4}$/.test(code);const q=lux?code.slice(1):code;f.code=q;
+  const ccs=lux?["LU"]:Object.keys(COUNTRIES).filter(cc=>FORMAT[cc].test(code));
+  let hits=[],failed=false;
+  const fresh=[];
+  await Promise.all(ccs.map(async cc=>{const k=cc+"-"+q;if(PCQ[k]){hits.push({cc,...PCQ[k]});return}
+    try{const v=await lookupOne(cc,q);if(v){hits.push({cc,...v});fresh.push(cc)}}catch(e){failed=true;const v=PC[k];if(v)hits.push({cc,...v})}}));
+  for(const h of hits)if(fresh.includes(h.cc)){Object.assign(h,await refine(h.cc,q,h));remember(h.cc,q,{city:h.city,lat:h.lat,lon:h.lon})}
+  if(!hits.length&&!failed){for(const h of await nomiAll(q,ccs)){hits.push(h);remember(h.cc,q,{city:h.city,lat:h.lat,lon:h.lon})}}
+  for(const cc of ccs){const v=PC[cc+"-"+q];if(v&&!hits.some(h=>h.cc===cc))hits.push({cc,...v})}
+  if(ui.form!==f||f.req!==code)return;
+  const order=Object.keys(COUNTRIES);hits.sort((a,b)=>order.indexOf(a.cc)-order.indexOf(b.cc));f.hits=hits;
   if(hits.length===1)setCountry(hits[0].cc,false);
   else if(hits.length>1)f.check={ok:false,multi:hits,text:`${code} birden fazla ülkede var. Hangisi?`};
-  else f.check={ok:false,text:`${raw.trim()} hatalı bir posta kodu.`};
-  render();
+  else f.check={ok:false,text:failed?"Posta kodu kontrol edilemedi. İnternet bağlantını kontrol et.":`${raw.trim()} hatalı bir posta kodu.`};
+  renderKeep();
 }
-function setCountry(cc,rer=true){const f=ui.form,g=PC[cc+"-"+f.code];f.cc=cc;
-  f.check={ok:true,text:`Bulundu: ${f.code} ${g.city} (${COUNTRIES[cc]}). Suben'e yaklaşık ${fmtKm(dist(SUBEN,g))}.`};if(rer)render()}
+function renderKeep(){const a=document.activeElement,id=a&&a.id,pos=a&&a.selectionStart;render();
+  if(id){const el=document.getElementById(id);if(el){el.focus();try{el.setSelectionRange(pos,pos)}catch(e){}}}}
+function setCountry(cc,rer=true){const f=ui.form,g=(f.hits||[]).find(h=>h.cc===cc);if(!g)return;f.cc=cc;f.place={city:g.city,lat:g.lat,lon:g.lon};
+  f.check={ok:true,text:`Bulundu: ${f.code} ${g.city} (${COUNTRIES[cc]}).`};if(rer)renderKeep()}
 
 /* ---------- ARAÇ AYARLA (anket) ---------- */
 function vAyarla(){
@@ -578,32 +650,25 @@ const COUNTRY_LBL=[["ALMANYA",51.2,10.2],["AVUSTURYA",47.6,14.6],["ÇEKYA",49.8,
 let EU=null;
 const dec=raw=>raw.split("|").map(r=>{let x=0,y=0;return r.split(" ").map((p,i)=>{const [a,b]=p.split(",").map(Number);if(i===0){x=a;y=b}else{x+=a;y+=b}return [x/20,y/20]})});
 function euRings(){if(EU)return EU;EU={land:dec(EU_LAND),bord:dec(EU_BORD)};return EU}
-function mapSvg(ids){
-  const pts=[SUBEN,...ids.map(id=>geo(A(id)))];
-  let la0=Math.min(...pts.map(p=>p.lat)),la1=Math.max(...pts.map(p=>p.lat)),lo0=Math.min(...pts.map(p=>p.lon)),lo1=Math.max(...pts.map(p=>p.lon));
-  const k=Math.cos((la0+la1)/2*Math.PI/180);
-  let w=Math.max((lo1-lo0)*k,3.5),h=Math.max(la1-la0,2.6);
-  const narrow=window.innerWidth<600,Wd=narrow?400:720,Ht=narrow?Math.round(Math.min(440,Math.max(320,Wd*h/w))):Math.round(Math.min(480,Math.max(300,Wd*h/w)));
-  // görünür alan: rota + %18 kenar payı, oran kutuya uydurulur
-  const cx=(lo0+lo1)/2*k, cy=(la0+la1)/2;
-  let vw=w*1.6, vh=h*1.6; if(vw/vh<Wd/Ht)vw=vh*Wd/Ht; else vh=vw*Ht/Wd;
-  const sc=Wd/vw;
-  const X=lon=>(lon*k-(cx-vw/2))*sc, Y=lat=>((cy+vh/2)-lat)*sc;
-  const E=euRings(),pth=(r,z)=>"M"+r.map(([lo,la])=>X(lo).toFixed(1)+","+Y(la).toFixed(1)).join("L")+(z?"Z":"");
-  const land=E.land.map(r=>pth(r,1)).join(""), bord=E.bord.map(r=>pth(r,0)).join("");
-  const clbl=COUNTRY_LBL.map(([n,la,lo])=>{const x=X(lo),y=Y(la);return x>20&&x<Wd-20&&y>14&&y<Ht-8?`<text x="${x}" y="${y}" text-anchor="middle" font-size="11" font-weight="700" letter-spacing="2" fill="var(--border)" font-family="Figtree, sans-serif">${n}</text>`:""}).join("");
-  const line=pts.map(p=>`${X(p.lon).toFixed(1)},${Y(p.lat).toFixed(1)}`).join(" ");
-  const lbl=(x,y,t,bold)=>`<text x="${x}" y="${y}" font-size="${bold?13:12}" font-weight="${bold?800:600}" fill="var(--fg)" stroke="var(--land)" stroke-width="3.5" paint-order="stroke" stroke-linejoin="round" font-family="Figtree, sans-serif">${esc(t)}</text>`;
-  return `<svg class="map" viewBox="0 0 ${Wd} ${Ht}" role="img" aria-label="Avrupa haritasında rota">
-   <rect width="${Wd}" height="${Ht}" fill="var(--sea)"/>
-   <path d="${land}" fill="var(--land)" stroke="var(--border)" stroke-width="1" stroke-linejoin="round"/>
-   <path d="${bord}" fill="none" stroke="var(--border)" stroke-width="1.2" stroke-dasharray="4 3" stroke-linejoin="round"/>
-   ${clbl}
-   <polyline points="${line}" fill="none" stroke="var(--accent)" stroke-width="3" stroke-dasharray="7 6" stroke-linejoin="round" stroke-linecap="round"/>
-   <g><rect x="${X(SUBEN.lon)-10}" y="${Y(SUBEN.lat)-10}" width="20" height="20" rx="4" fill="var(--fg)"/>${lbl(X(SUBEN.lon)+15,Y(SUBEN.lat)+5,"Suben",true)}</g>
-   ${ids.map((id,i)=>{const g=geo(A(id)),x=X(g.lon),y=Y(g.lat);return `<g><circle cx="${x}" cy="${y}" r="12" fill="var(--accent)" stroke="#fff" stroke-width="2"/><text x="${x}" y="${y+4}" text-anchor="middle" font-size="11" font-weight="800" fill="#fff" font-family="Figtree, sans-serif">${i+1}</text>${lbl(x+16,y+4,g.city)}</g>`}).join("")}
-  </svg>`;
-}
+function mapSvg(ids){return `<div class="map lmap" data-ids="${ids.join(",")}" role="img" aria-label="Haritada rota"></div>`}
+let maps=[];const ROUTE_GEO={};
+function destroyMaps(){maps.forEach(m=>{try{m.remove()}catch(e){}});maps=[]}
+function mountMaps(){if(!window.L)return;document.querySelectorAll(".lmap").forEach(el=>{
+  const ids=el.dataset.ids?el.dataset.ids.split(","):[];const pts=[SUBEN,...ids.map(id=>geo(A(id)))];
+  const touch=window.matchMedia("(pointer:coarse)").matches;
+  const m=L.map(el,{zoomControl:true,scrollWheelZoom:false,dragging:!touch,tap:false,attributionControl:true});maps.push(m);
+  m.attributionControl.setPrefix(false);
+  L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png",{maxZoom:18,referrerPolicy:"strict-origin-when-cross-origin",attribution:'© <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a>'}).addTo(m);
+  m.on("click",()=>{m.scrollWheelZoom.enable();m.dragging.enable()});
+  const key=pts.map(pk).join(";");
+  let line=L.polyline(ROUTE_GEO[key]||pts.map(p=>[p.lat,p.lon]),{color:"#f54e00",weight:4,opacity:.9,dashArray:ROUTE_GEO[key]?null:"7 6"}).addTo(m);
+  L.marker([SUBEN.lat,SUBEN.lon],{icon:L.divIcon({className:"",html:'<span class="mk mk-s">S</span>',iconSize:[26,26],iconAnchor:[13,13]}),keyboard:false,title:"Suben"}).addTo(m);
+  ids.forEach((id,i)=>{const g=geo(A(id));L.marker([g.lat,g.lon],{icon:L.divIcon({className:"",html:`<span class="mk">${i+1}</span>`,iconSize:[26,26],iconAnchor:[13,13]}),keyboard:false,title:`${A(id).code} ${g.city}`}).addTo(m)});
+  m.fitBounds(L.latLngBounds(pts.map(p=>[p.lat,p.lon])),{padding:[34,34],maxZoom:10});
+  if(!ROUTE_GEO[key]&&ids.length)osrm(`/route/v1/driving/${pts.map(p=>p.lon.toFixed(5)+","+p.lat.toFixed(5)).join(";")}?overview=simplified&geometries=geojson`)
+    .then(j=>{ROUTE_GEO[key]=j.routes[0].geometry.coordinates.map(([lo,la])=>[la,lo]);if(maps.includes(m)){line.remove();line=L.polyline(ROUTE_GEO[key],{color:"#f54e00",weight:4,opacity:.9}).addTo(m)}})
+    .catch(e=>console.warn("güzergah alınamadı",e));
+})}
 function resultView(res){
   if(res.error)return `<div class="msg bad" id="result">${esc(res.error)}</div>`;
   if(!res.options.length)return `<div class="msg warn" id="result">Bekleyen adreslerin hiçbiri bu araca sığmıyor.</div>`;
@@ -724,9 +789,9 @@ function vGecmis(){
 
 
 /* ---------- Çizim ve olaylar ---------- */
-function render(){renderTop();const m=document.getElementById("app");
+function render(){destroyMaps();renderTop();const m=document.getElementById("app");
   m.innerHTML=!S.user?vLogin():view==="home"?vHome():view==="havuz"?vHavuz():view==="ekle"?vEkle():view==="ayarla"?vAyarla():view==="araclar"?vAraclar():view==="arac"?vArac():vGecmis();
-  if(ui.scrollSheet){ui.scrollSheet=false;document.getElementById("sheet")?.scrollIntoView({behavior:"smooth"})}}
+  if(ui.scrollSheet){ui.scrollSheet=false;document.getElementById("sheet")?.scrollIntoView({behavior:"smooth"})};mountMaps()}
 const app=document.getElementById("app");
 app.addEventListener("click",e=>{
   const b=e.target.closest("[data-act]");if(!b)return;const act=b.dataset.act,id=b.dataset.id;
@@ -752,11 +817,13 @@ app.addEventListener("click",e=>{
     case "plan":{const cap=+String(document.getElementById("cap")?.value??p.cap).replace(",",".")||+p.cap,stops=parseInt(document.getElementById("stops")?.value??p.stops)||+p.stops;
       p.cap=String(cap);p.stops=String(stops);
       if(!(cap>0)||!(stops>0)){p.result={error:"Araç takımı ve adres sayısı 0'dan büyük olmalı."};render();break}
-      p.result=planOptions(cap,stops,p.pri,p.ex,+p.slack);p.sel=p.result.options?p.result.options.length-1:0;p.show=true;render();window.scrollTo({top:0});break}
+      if(p.busy)break;p.busy=true;b.disabled=true;b.lastChild.textContent="Hesaplanıyor…";
+      ensureKm([SUBEN,...S.addresses.filter(a=>a.status==="pool"&&!p.ex.includes(a.id)).map(geo)]).finally(()=>{p.busy=false;if(ui.plan!==p)return;
+        p.result=planOptions(cap,stops,p.pri,p.ex,+p.slack);p.sel=p.result.options?p.result.options.length-1:0;p.show=true;render();window.scrollTo({top:0})});break}
     case "editPlan":p.show=false;render();window.scrollTo({top:0});break;
     case "confirmPlan":{const res=p.result,r=res.options[Math.min(p.sel,res.options.length-1)];const v={id:uid(),name:p.name.trim(),cap:res.cap,stops:r.order,status:"hazir",created:Date.now()};
       r.order.forEach(i=>{A(i).status="vehicle";A(i).vehicle=v.id});S.vehicles.push(v);logIt(`${v.name} ayarlandı: ${r.order.length} adres, ${fmtT(r.load)}/${fmtT(res.cap)} takım, ≈ ${fmtKm(r.km)}`);save();go("home");break}
-    case "open":go("arac",{id});break;
+    case "open":{go("arac",{id});const v=S.vehicles.find(x=>x.id===id);if(v)ensureKm([SUBEN,...v.stops.map(i=>geo(A(i)))]).then(()=>{if(view==="arac"&&ui.id===id)softRender()});break}
     case "sheet":ui.sheet=true;ui.pdfMsg=null;ui.scrollSheet=true;render();break;
     case "addExtra":{const v=S.vehicles.find(x=>x.id===ui.id);v.cost=v.cost||{};(v.cost.extras=v.cost.extras||[]).push({label:"",amount:""});save();render();
       const xs=document.querySelectorAll('[data-extra="label"]');xs[xs.length-1]?.focus();break}
@@ -806,8 +873,8 @@ app.addEventListener("focusout",e=>{if(e.target.id!=="code"||!ui.form)return;con
   const raw=e.target.value.toUpperCase().replace(/[\s-]/g,"");if(ui.form.check&&raw===ui.form.code&&(ui.form.check.ok||ui.form.check.multi))return;
   checkCode();if(next&&next.id){const el=document.getElementById(next.id);if(el)el.focus()}else if(next&&next.dataset.act==="pickcc"){}});
 app.addEventListener("submit",e=>{e.preventDefault();const f=ui.form;if(!f.check&&document.getElementById("code").value)checkCode();const t=Math.round(+String(f.takim).replace(",",".")*10)/10;
-  if(!(f.owner&&f.check?.ok&&t>0))return;
-  const a={id:uid(),cc:f.cc,code:f.code,owner:f.owner,takim:t,status:"pool",created:Date.now(),packages:"",payment:"",productCode:""};
+  if(!(f.owner&&f.check?.ok&&f.place&&t>0))return;
+  const a={id:uid(),cc:f.cc,code:f.code,city:f.place.city,lat:f.place.lat,lon:f.place.lon,owner:f.owner,takim:t,status:"pool",created:Date.now(),packages:"",payment:"",productCode:""};
   S.addresses.push(a);logIt(`Yeni adres: ${a.cc} ${a.code} (${owner(a.owner).name}), ${fmtT(t)} takım`);save();
   ui={form:{owner:f.owner,cc:f.cc,code:"",takim:"",check:null},added:`Kaydedildi: ${a.code} ${geo(a).city}`};render();document.getElementById("code")?.focus()});
 
