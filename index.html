@@ -779,10 +779,12 @@ async function pdfAction(share,btn){const v=S.vehicles.find(x=>x.id===ui.id);if(
       try{await navigator.share({files:[file],title:name});say("Gönderildi.")}catch(e){if(e.name==="AbortError")say("");else say("Paylaşılamadı. PDF indir ile indirip WhatsApp'tan ekleyebilirsin.",true)}}
     else{doc.download(name);say("Bu cihaz doğrudan paylaşmayı desteklemiyor. PDF indirildi, WhatsApp'ta ataç simgesiyle ekleyebilirsin.")}});
 }
+/* Kayıt geçmişi bu andan itibaren gösterilir (öncesi deneme kayıtları: silinmedi, veritabanında ve yedekte duruyor) */
+const LOG_FROM=1794147598815; // 2026-11-08 17:19
 function vGecmis(){
   const day=t=>new Date(t).toDateString(),today=day(Date.now()),yest=day(Date.now()-864e5);
   const dayName=t=>{const d=day(t);return d===today?"Bugün":d===yest?"Dün":new Date(t).toLocaleDateString("tr-TR",{day:"numeric",month:"long",weekday:"long"})};
-  const groups=[];S.log.forEach(l=>{const k=day(l.t);let g=groups[groups.length-1];if(!g||g.k!==k){g={k,name:dayName(l.t),items:[]};groups.push(g)}g.items.push(l)});
+  const groups=[];S.log.filter(l=>l.t>=LOG_FROM).forEach(l=>{const k=day(l.t);let g=groups[groups.length-1];if(!g||g.k!==k){g={k,name:dayName(l.t),items:[]};groups.push(g)}g.items.push(l)});
   return `${backBtn()}<div><h2>Kayıt geçmişi</h2></div>
   ${groups.map(g=>`<div class="lgroup"><h3>${g.name}</h3><div class="loglist">${g.items.map(l=>`<div class="lrow"><span class="ltime">${new Date(l.t).toLocaleTimeString("tr-TR",{hour:"2-digit",minute:"2-digit"})}</span><div class="lbody"><b>${esc(l.who||"—")}</b><span>${esc(l.txt)}</span></div></div>`).join("")}</div></div>`).join("")}`;
 }
