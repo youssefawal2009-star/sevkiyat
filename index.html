@@ -1,0 +1,817 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' blob: data: https://paojawgjfckmavwzwzhl.supabase.co wss://paojawgjfckmavwzwzhl.supabase.co; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta name="referrer" content="no-referrer">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#ffffff">
+<title>Sevkiyat Planlayıcı</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600&display=swap">
+<style>
+/* Layout: beyaz zemin, ortada dar sütun; büyük yuvarlak kartlar, turuncu daire ikonlar, hap biçimli büyük butonlar. */
+:root{
+  --bg:#ffffff; --surface:#ffffff; --soft:#f6f6f7; --line:#ebebee;
+  --fg:#141416; --muted:#6c6c75; --accent:#f54e00; --accent-fg:#ffffff; --accent-soft:#fff1e9;
+  --ok:#15803d; --ok-soft:#e5f6eb; --warn:#b45309; --warn-soft:#fdf2e1; --bad:#c62828; --bad-soft:#fdeaea;
+  --o1:#f54e00; --o2:#f54e00; --o3:#f54e00; --sea:#dbe8f4; --land:#fbfaf8; --border:#aab6c4;
+  --shadow:0 8px 28px rgba(20,20,30,.06); --glow:0 12px 26px rgba(245,78,0,.28);
+  --f-body:"Figtree",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --f-display:"Figtree",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --f-mono:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace;
+}
+:root{color-scheme:light}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font-family:var(--f-body);font-size:16px;line-height:1.45}
+.wrap{max-width:980px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.topbar{display:flex;justify-content:space-between;align-items:center;gap:12px;padding-block:18px 6px;flex-wrap:wrap}
+.who{display:flex;align-items:center;gap:10px;font-weight:600;color:var(--muted)}
+.who b{color:var(--fg)}
+.demo-badge{font-size:12px;font-weight:700;color:var(--warn);background:var(--warn-soft);padding:4px 10px;border-radius:99px}
+main{padding-block:18px 70px;display:grid;gap:22px}
+h2{font-weight:800;font-size:30px;letter-spacing:-.02em;margin:0;text-wrap:balance}
+h3{font-weight:700;font-size:20px;letter-spacing:-.01em;margin:0}
+.sub{color:var(--muted);margin:4px 0 0}
+.ic{width:22px;height:22px;flex:none}
+/* Ana sayfa */
+.home{max-width:760px;width:100%;margin:20px auto 0;display:grid;gap:22px}
+.hcard{display:flex;align-items:center;gap:22px;padding:26px 28px;border:1.5px solid var(--line);border-radius:40px;background:var(--surface);box-shadow:var(--shadow);cursor:pointer;text-align:left;font:inherit;color:inherit;width:100%}
+.hcard:hover{border-color:color-mix(in srgb,var(--accent) 45%,var(--line))}
+.hcard .t{font-weight:800;font-size:26px;letter-spacing:-.02em}
+.hcard .d{color:var(--muted);font-size:18px;margin-top:2px}
+.bubble{width:66px;height:66px;border-radius:50%;background:var(--accent);color:var(--accent-fg);display:grid;place-items:center;flex:none;box-shadow:var(--glow)}
+.bubble .ic{width:28px;height:28px}
+.bigbtns{display:grid;grid-template-columns:1fr 1fr;gap:22px;margin-top:28px}
+.foot{display:flex;justify-content:center;gap:10px;flex-wrap:wrap;margin-top:18px}
+/* Butonlar */
+.btn{font:700 15px var(--f-body);border:1.5px solid var(--line);background:var(--surface);color:var(--fg);padding:10px 18px;border-radius:999px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:8px;box-shadow:0 2px 8px rgba(20,20,30,.04)}
+.btn:hover{background:var(--soft)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-fg);box-shadow:var(--glow)}
+.btn.primary:hover{filter:brightness(1.06);background:var(--accent)}
+.btn.big{font-size:21px;font-weight:600;padding:22px 28px;width:100%}
+.btn.big .ic{width:26px;height:26px}
+.btn.danger{color:var(--bad)}
+.btn.small{padding:6px 12px;font-size:13px;box-shadow:none}
+.btn.ghost{border-color:transparent;box-shadow:none;background:none;color:var(--muted)}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid color-mix(in srgb,var(--accent) 55%,transparent);outline-offset:2px}
+.back{align-self:start;justify-self:start}
+.panel{background:var(--surface);border:1.5px solid var(--line);border-radius:32px;padding:26px;box-shadow:var(--shadow)}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.spread{display:flex;justify-content:space-between;align-items:flex-end;gap:14px;flex-wrap:wrap}
+input[type=text],input[type=number],input[type=password],select{font:500 17px var(--f-body);padding:12px 16px;border:1.5px solid var(--line);border-radius:16px;background:var(--surface);color:var(--fg);min-width:0;width:100%}
+.mono{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+/* Anket adımları */
+.steps{display:grid;gap:22px}
+.step{display:grid;grid-template-columns:40px 1fr;gap:14px;align-items:start}
+.step .n{width:40px;height:40px;border-radius:50%;display:grid;place-items:center;background:var(--soft);color:var(--muted);font-weight:800;font-size:16px}
+.step.done .n{background:var(--accent-soft);color:var(--accent)}
+.step.active .n{background:var(--accent);color:var(--accent-fg);box-shadow:var(--glow)}
+.step .body{display:grid;gap:10px;min-width:0}
+.step .q{font-weight:700;font-size:18px}
+.choices{display:flex;gap:10px;flex-wrap:wrap}
+.addform{max-width:560px;width:100%;margin:0 auto}
+.form-col{width:100%;display:grid;gap:10px}
+.form-col .choices.multi{grid-template-columns:repeat(auto-fit,minmax(150px,1fr))}
+.form-col .choices{display:grid;grid-template-columns:repeat(3,1fr)}
+.form-col .choices.two{grid-template-columns:repeat(2,1fr)}
+.form-col .choice{justify-content:center;padding:13px 8px}
+.form-col input{height:52px}
+.fld{max-width:200px;height:52px}
+.btn.toggle{height:52px;border-style:dashed;font-size:16px}.btn.toggle[aria-pressed="true"]{border-style:solid}
+.cnt{background:var(--accent);color:var(--accent-fg);border-radius:99px;padding:1px 8px;font-size:13px}
+.choice{border:1.5px solid var(--line);background:var(--surface);color:var(--fg);border-radius:999px;padding:11px 20px;font:600 16px var(--f-body);cursor:pointer;display:flex;align-items:center;gap:8px}
+.choice[aria-pressed="true"]{border-color:var(--accent);background:var(--accent-soft);color:var(--accent)}
+.dot{width:10px;height:10px;border-radius:50%;display:inline-block;flex:none}
+.msg{padding:11px 16px;border-radius:16px;font-weight:600;font-size:15px}
+.msg.ok{background:var(--ok-soft);color:var(--ok)}
+.msg.bad{background:var(--bad-soft);color:var(--bad)}
+.msg.warn{background:var(--warn-soft);color:var(--warn)}
+/* Tablolar */
+.tbl{overflow-x:auto;border:1.5px solid var(--line);border-radius:28px;background:var(--surface);box-shadow:var(--shadow)}
+table{border-collapse:collapse;width:100%;font-size:15px}
+th{font:700 12px var(--f-body);text-transform:uppercase;letter-spacing:.07em;color:var(--muted);text-align:left;padding:14px 16px;border-bottom:1.5px solid var(--line);white-space:nowrap}
+td{padding:12px 16px;border-bottom:1px solid var(--line);vertical-align:middle}
+tr:last-child td{border-bottom:0}
+td.r,th.r{text-align:right}
+td input[type=text],td input[type=number],td select{font-size:15px;padding:8px 10px;border-radius:12px;min-width:80px}
+.owner{display:inline-flex;align-items:center;gap:7px;font-weight:600;white-space:nowrap}
+.pc{font-family:var(--f-mono);font-weight:600}
+.cc{font:700 11px var(--f-mono);background:var(--soft);color:var(--muted);padding:3px 6px;border-radius:6px;margin-right:7px}
+.city{color:var(--muted);font-size:14px}
+.stopno{font-weight:800;font-size:14px;width:28px;height:28px;border-radius:50%;display:inline-grid;place-items:center;background:var(--accent);color:var(--accent-fg)}
+.cost{display:grid;gap:14px}
+.cost-f{grid-template-columns:repeat(4,1fr);margin-top:0}
+.cost-q{font-weight:700;font-size:16px}
+.xrow{display:grid;grid-template-columns:1fr 120px 46px;gap:8px}.xrow input{height:46px;font-size:16px;padding:10px 12px;border-radius:14px}.xrow .btn{height:46px;font-size:20px;padding:0}
+.fixed .xs{text-transform:none;letter-spacing:0;font-weight:600}
+.fixed .net{background:var(--accent-soft)}.fixed .net dt,.fixed .net dd{color:var(--accent)}.fixed .net dd{font-size:20px;font-weight:800}
+.shares{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px;margin-top:4px}
+.share{border:1.5px solid var(--line);border-radius:22px;padding:14px 16px;display:grid;gap:6px}
+.sh-top{display:grid;gap:2px;margin-bottom:4px}.sh-top b{font-size:17px}.sh-top span{color:var(--muted);font-weight:600;font-size:13px}
+.sh-row{display:flex;justify-content:space-between;gap:8px;font-weight:600;color:var(--muted)}.sh-row b{color:var(--fg);font-variant-numeric:tabular-nums}
+.sh-row.fin{border-top:1.5px solid var(--line);padding-top:8px;margin-top:2px;color:var(--fg)}.sh-row.fin b{color:var(--accent);font-size:20px;font-weight:800}
+@media (max-width:600px){.cost-f{grid-template-columns:1fr 1fr}.xrow{grid-template-columns:1fr 96px 46px}}
+.lgroup{display:grid;gap:10px}.lgroup h3{font-size:17px}
+.loglist{background:var(--surface);border:1.5px solid var(--line);border-radius:22px;overflow:hidden}
+.lrow{display:grid;grid-template-columns:52px 1fr;gap:12px;padding:12px 16px;align-items:start}.lrow+.lrow{border-top:1px solid var(--line)}
+.ltime{font:600 14px var(--f-mono);color:var(--muted);padding-top:1px}
+.lbody{display:grid;gap:2px;min-width:0}.lbody b{font-size:15px}.lbody span{color:var(--muted);font-weight:500;font-size:15px;overflow-wrap:anywhere}
+.login .choices{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.login .choice{justify-content:center;padding:11px 6px}
+.alist{display:grid;gap:10px}
+.acard{background:var(--surface);border:1.5px solid var(--line);border-radius:22px;padding:14px 16px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.a-main{display:grid;gap:4px;min-width:0}.a-addr .pc{font-size:17px}.a-addr .city{font-weight:600}
+.a-meta{color:var(--muted);font-weight:600;font-size:14px}.a-meta b{color:var(--fg)}
+.a-confirm{display:flex;gap:8px;margin-left:auto}
+.empty{text-align:center;color:var(--muted);padding:34px 12px}
+.loadbar{display:flex;height:30px;border-radius:999px;overflow:hidden;background:var(--soft)}
+.loadbar span{display:grid;place-items:center;color:#fff;font:700 12px var(--f-mono);border-right:2px solid var(--surface);min-width:0;overflow:hidden;white-space:nowrap}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px}
+.stat{background:var(--soft);border-radius:22px;padding:14px 18px}
+.stat b{display:block;font-weight:800;font-size:24px;letter-spacing:-.01em;font-variant-numeric:tabular-nums}
+.stat small{color:var(--muted);font-weight:700;font-size:12px;text-transform:uppercase;letter-spacing:.06em}
+.map{width:100%;max-width:100%;height:auto;background:var(--soft);border-radius:24px}
+.cards{display:grid;gap:14px}
+.vcard{display:grid;grid-template-columns:auto 1fr;gap:16px;align-items:center;background:var(--surface);border:1.5px solid var(--line);border-radius:30px;padding:18px 22px;cursor:pointer;text-align:left;font:inherit;color:inherit;width:100%;box-shadow:var(--shadow)}
+.vcard:hover{border-color:color-mix(in srgb,var(--accent) 45%,var(--line))}
+.vcard .bubble{width:50px;height:50px;box-shadow:none}.vcard .bubble .ic{width:22px;height:22px}
+.vcard .t{font-weight:800;font-size:19px}
+.note{font-size:14px;color:var(--muted)}
+.pill{font:700 12px var(--f-body);padding:5px 11px;border-radius:99px;white-space:nowrap}
+.pill.p1{background:var(--accent-soft);color:var(--accent)}
+.pill.p2{background:var(--warn-soft);color:var(--warn)}
+.pill.p3{background:var(--ok-soft);color:var(--ok)}
+.pickers{display:grid;gap:4px;max-height:280px;overflow:auto;border:1.5px solid var(--line);border-radius:20px;padding:8px}
+.pick{display:flex;gap:10px;align-items:center;padding:8px 10px;border-radius:14px;cursor:pointer;font-weight:500;flex-wrap:wrap}
+.pick:hover{background:var(--soft)}
+.pick input{width:18px;height:18px;flex:none;accent-color:var(--accent)}
+.confirm{display:inline-flex;gap:10px;align-items:center;flex-wrap:wrap;background:var(--bad-soft);color:var(--bad);padding:10px 14px;border-radius:20px;font-weight:600}
+.summary{background:var(--surface);border:1.5px solid var(--line);border-radius:32px;box-shadow:var(--shadow);overflow:hidden}
+.sum-top{display:grid;grid-template-columns:1fr 1fr}
+.sum-top>div{padding:20px 26px}.sum-top>div+div{border-left:1.5px solid var(--line)}
+.sum-top small,.sum-name{color:var(--muted);font-weight:700;font-size:12px;text-transform:uppercase;letter-spacing:.06em}
+.sum-top b{display:block;font-weight:800;font-size:34px;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+.sum-top b span{font-size:18px;font-weight:600;color:var(--muted)}
+.sub{list-style:none;margin:12px 0 0;padding:12px 0 0;border-top:1.5px solid var(--line);display:grid;gap:8px}
+.sub li{display:flex;justify-content:space-between;gap:8px;font-size:15px;font-weight:600;color:var(--muted)}
+.sum-top .sub b{display:inline;font-size:15px;font-weight:700;color:var(--fg);letter-spacing:0}
+@media (max-width:600px){.sum-top>div{padding:16px 18px}.sum-top b{font-size:28px}.sub li{font-size:14px}.sum-top .sub b{font-size:14px}}
+/* Durak kartları */
+.stops{list-style:none;margin:0;padding:0;display:grid;gap:10px;position:relative}
+.stops::before{content:"";position:absolute;left:17px;top:24px;bottom:24px;width:2px;background:repeating-linear-gradient(var(--accent) 0 6px,transparent 6px 11px);opacity:.5}
+.stop{display:grid;grid-template-columns:36px 1fr;gap:12px;align-items:start;position:relative}
+.sn{width:36px;height:36px;border-radius:50%;background:var(--accent);color:var(--accent-fg);display:grid;place-items:center;font-weight:800;font-size:15px;margin-top:10px;box-shadow:0 0 0 4px var(--surface)}
+.sn.sq{border-radius:9px;background:var(--fg);color:var(--bg)}
+.sc{background:var(--soft);border-radius:22px;padding:12px 16px;display:grid;gap:4px;min-width:0}
+.stop.start .sc{background:none;border:1.5px dashed var(--line)}
+.sl{display:flex;justify-content:space-between;align-items:baseline;gap:10px}
+.sl .pc{font-size:17px}.sl .ct{color:var(--muted);font-weight:600}
+.big{font-weight:800;font-size:20px;white-space:nowrap;font-variant-numeric:tabular-nums}.big small{font-size:13px;font-weight:600;color:var(--muted)}
+.sm{display:flex;justify-content:space-between;gap:10px;color:var(--muted);font-size:14px;font-weight:500}
+.sf{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:8px}
+.sf .wide{grid-column:1/-1}
+.seg{display:grid;grid-template-columns:repeat(3,1fr);background:var(--surface);border:1.5px solid var(--line);border-radius:16px;padding:4px;gap:4px}
+.seg button{border:0;background:none;font:600 15px var(--f-body);color:var(--muted);padding:10px 6px;border-radius:12px;cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--accent);color:var(--accent-fg)}
+.sf label{display:grid;grid-template-rows:1fr auto;align-items:end;gap:4px;font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;min-width:0}
+.sf input,.sf select{font-size:16px;padding:10px 12px;border-radius:14px;height:46px;width:100%;background:var(--surface);box-sizing:border-box}
+.fixed{margin:0;background:var(--surface);border:1.5px solid var(--line);border-radius:16px;overflow:hidden}
+.fixed>div{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:11px 14px}
+.fixed>div+div{border-top:1px solid var(--line)}
+.fixed dt{color:var(--muted);font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.05em}
+.fixed dd{margin:0;font-weight:700;font-size:16px;text-align:right;font-variant-numeric:tabular-nums}
+.fixed .ct{color:var(--muted);font-weight:600}
+.sa{display:flex;gap:8px;flex-wrap:wrap;margin-top:6px}
+@media (max-width:600px){.sf{grid-template-columns:1fr 1fr;gap:10px}.sf .wide-m{grid-column:1/-1}.sf input,.sf select{padding:10px}.sc{padding:12px 14px}
+ .stats{grid-template-columns:1fr 1fr;gap:8px}.stat{padding:12px 14px;border-radius:18px}.stat b{font-size:20px}}
+.sa .danger{margin-left:auto}
+.pdfrow{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:14px}.pdfrow .btn{height:58px;font-size:16px}
+@media (max-width:520px){.pdfrow{grid-template-columns:1fr}}
+.btnrow{display:grid;grid-template-columns:1fr auto;gap:12px;align-items:center}.btnrow .btn{white-space:nowrap}.btnrow .primary{height:58px;font-size:17px}.btnrow .danger{height:58px;padding:0 18px;font-size:14px;box-shadow:none}
+.delrow{display:flex;justify-content:center}.delrow:empty{display:none}
+/* Seçenek kartları (araç önerileri) */
+.opts{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px}
+.opt{border:1.5px solid var(--line);border-radius:26px;padding:16px 18px;background:var(--surface);cursor:pointer;text-align:left;font:inherit;color:inherit;display:grid;gap:4px}
+.opt[aria-pressed="true"]{border-color:var(--accent);background:var(--accent-soft);box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 18%,transparent)}
+.opt .lbl{font:700 12px var(--f-body);text-transform:uppercase;letter-spacing:.07em;color:var(--accent)}
+.opt .km{font-weight:800;font-size:26px;letter-spacing:-.02em}
+.opt .sv{font-weight:700;color:var(--ok);font-size:14px}
+/* Giriş */
+.net{position:fixed;left:50%;bottom:max(16px,env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--bad);color:#fff;font-weight:700;font-size:14px;padding:10px 18px;border-radius:999px;box-shadow:var(--shadow);max-width:calc(100% - 32px);text-align:center;z-index:50}
+.login{max-width:460px;margin:40px auto 0;display:grid;gap:18px}
+/* Sürücü belgesi (A4 önizleme) */
+.sheet-wrap{overflow-x:auto;background:var(--soft);border-radius:28px;padding:18px}
+.sheet{width:760px;margin:0 auto;background:#fff;color:#111;padding:36px 38px;box-shadow:0 2px 14px rgba(0,0,0,.15);font-family:var(--f-body)}
+.sheet h4{font-weight:800;font-size:24px;margin:0}
+.sheet .meta{display:flex;justify-content:space-between;gap:16px;border-bottom:2px solid #111;padding-bottom:12px;margin-bottom:14px;font-size:13px}
+.sheet table{font-size:12.5px}
+.sheet th{background:#f1f1f3;color:#333;border-bottom:1px solid #999;padding:8px 10px}
+.sheet td{border-bottom:1px solid #ccc;color:#111;padding:8px 10px}
+.sheet .code{font:700 15px var(--f-mono);border:1.5px solid #111;padding:2px 6px;border-radius:3px;white-space:nowrap}
+.sheet .sig{display:flex;gap:40px;margin-top:40px;font-size:12px;color:#444}
+.sheet .sig div{flex:1;border-top:1px solid #444;padding-top:6px}
+@media (max-width:600px){
+  .bigbtns{grid-template-columns:1fr;gap:14px}
+  .topbar{flex-wrap:nowrap}.who .demo-badge{display:none}
+  .hcard{border-radius:30px;padding:20px;gap:16px}.hcard .t{font-size:21px}.hcard .d{font-size:15px}
+  .bubble{width:54px;height:54px}.bubble .ic{width:24px;height:24px}
+  .btn.big{font-size:18px;padding:18px 22px}
+  h2{font-size:25px}.panel{padding:20px;border-radius:26px}
+  .step{grid-template-columns:32px 1fr}.step .n{width:32px;height:32px;font-size:14px}
+  .vcard{grid-template-columns:auto 1fr;}.vcard .pill{grid-column:2;justify-self:start}
+}
+@media (prefers-reduced-motion:no-preference){.btn,.choice,.vcard,.hcard,.opt{transition:background .15s,border-color .15s,transform .15s}.hcard:active,.btn.big:active{transform:scale(.99)}}
+</style>
+
+<div class="wrap"><div class="topbar" id="topbar"></div></div>
+<div class="wrap"><main id="app"></main></div>
+<div id="net" class="net" hidden></div>
+<script src="lib/supabase-2.117.3.js"></script>
+
+<script>
+/* ---------- Sabitler ---------- */
+const SUBEN = {lat:48.418, lon:13.433, name:"Suben gümrük (AT)"};
+const OWNERS = [{id:"mustafa",name:"Mustafa",c:"--o1"},{id:"necdet",name:"Necdet",c:"--o2"},{id:"besar",name:"Beşar",c:"--o3"}];
+const COUNTRIES = {DE:"Almanya",AT:"Avusturya",NL:"Hollanda",BE:"Belçika",FR:"Fransa",CH:"İsviçre",LU:"Lüksemburg",IT:"İtalya",DK:"Danimarka",SE:"İsveç",NO:"Norveç",PL:"Polonya",CZ:"Çekya",SK:"Slovakya",HU:"Macaristan",SI:"Slovenya"};
+const FORMAT = {DE:/^\d{5}$/,AT:/^\d{4}$/,NL:/^\d{4}([A-Z]{2})?$/,BE:/^\d{4}$/,FR:/^\d{5}$/,CH:/^\d{4}$/,LU:/^\d{4}$/,IT:/^\d{5}$/,DK:/^\d{4}$/,SE:/^\d{5}$/,NO:/^\d{4}$/,PL:/^\d{5}$/,CZ:/^\d{5}$/,SK:/^\d{5}$/,HU:/^\d{4}$/,SI:/^\d{4}$/};
+/* Deneme için gömülü posta kodu listesi (gerçek sitede tüm Avrupa çevrimiçi kontrol edilecek) */
+const PC_RAW = `DE|10115|Berlin|52.532|13.385;DE|20095|Hamburg|53.551|10.000;DE|80331|München|48.137|11.575;DE|50667|Köln|50.938|6.957;DE|60311|Frankfurt am Main|50.111|8.682;DE|70173|Stuttgart|48.776|9.177;DE|40210|Düsseldorf|51.222|6.788;DE|44135|Dortmund|51.514|7.466;DE|45127|Essen|51.456|7.012;DE|28195|Bremen|53.078|8.807;DE|30159|Hannover|52.375|9.738;DE|90402|Nürnberg|49.451|11.077;DE|01067|Dresden|51.050|13.737;DE|04109|Leipzig|51.340|12.373;DE|93047|Regensburg|49.015|12.096;DE|94032|Passau|48.574|13.461;DE|86150|Augsburg|48.366|10.898;DE|89073|Ulm|48.398|9.991;DE|68159|Mannheim|49.488|8.466;DE|76133|Karlsruhe|49.009|8.404;DE|97070|Würzburg|49.792|9.932;DE|95444|Bayreuth|49.945|11.578;DE|85049|Ingolstadt|48.763|11.425;DE|84028|Landshut|48.537|12.152;DE|83022|Rosenheim|47.856|12.128;DE|94315|Straubing|48.881|12.573;DE|94469|Deggendorf|48.840|12.961;DE|92637|Weiden|49.677|12.156;DE|36037|Fulda|50.555|9.680;DE|34117|Kassel|51.316|9.498;DE|55116|Mainz|49.999|8.273;DE|65183|Wiesbaden|50.083|8.240;DE|66111|Saarbrücken|49.234|6.996;DE|47051|Duisburg|51.433|6.763;DE|42103|Wuppertal|51.257|7.150;DE|33602|Bielefeld|52.021|8.535;DE|48143|Münster|51.962|7.626;DE|49074|Osnabrück|52.279|8.047;DE|38100|Braunschweig|52.264|10.524;DE|39104|Magdeburg|52.127|11.639;DE|99084|Erfurt|50.978|11.029;DE|07743|Jena|50.928|11.586;DE|09111|Chemnitz|50.833|12.920;DE|06108|Halle (Saale)|51.483|11.970;DE|24103|Kiel|54.323|10.135;DE|18055|Rostock|54.088|12.140;DE|79098|Freiburg|47.995|7.850;DE|78462|Konstanz|47.663|9.175;DE|88212|Ravensburg|47.782|9.611;DE|87435|Kempten|47.726|10.314;DE|72070|Tübingen|48.520|9.055;DE|74072|Heilbronn|49.142|9.218;DE|75175|Pforzheim|48.892|8.694;DE|63065|Offenbach|50.105|8.765;DE|64283|Darmstadt|49.872|8.651;AT|1010|Wien|48.208|16.373;AT|4020|Linz|48.306|14.286;AT|5020|Salzburg|47.800|13.044;AT|8010|Graz|47.071|15.439;AT|6020|Innsbruck|47.269|11.404;AT|4600|Wels|48.157|14.025;AT|4910|Ried im Innkreis|48.210|13.489;AT|4780|Schärding|48.457|13.432;AT|9020|Klagenfurt|46.624|14.308;AT|3100|St. Pölten|48.204|15.626;AT|6900|Bregenz|47.503|9.747;AT|4400|Steyr|48.039|14.419;NL|1012|Amsterdam|52.373|4.893;NL|3011|Rotterdam|51.920|4.480;NL|2511|Den Haag|52.078|4.313;NL|3511|Utrecht|52.091|5.122;NL|5611|Eindhoven|51.441|5.478;NL|6811|Arnhem|51.985|5.899;NL|7511|Enschede|52.221|6.893;NL|9711|Groningen|53.219|6.567;NL|6211|Maastricht|50.851|5.690;NL|6511|Nijmegen|51.842|5.858;BE|1000|Bruxelles|50.846|4.352;BE|2000|Antwerpen|51.219|4.402;BE|9000|Gent|51.054|3.717;BE|4000|Liège|50.633|5.567;BE|3500|Hasselt|50.930|5.338;FR|75001|Paris|48.860|2.341;FR|67000|Strasbourg|48.583|7.746;FR|69001|Lyon|45.767|4.834;FR|57000|Metz|49.120|6.176;FR|68100|Mulhouse|47.750|7.336;FR|54000|Nancy|48.692|6.184;FR|13001|Marseille|43.298|5.381;FR|59000|Lille|50.629|3.057;CH|8001|Zürich|47.372|8.542;CH|4001|Basel|47.558|7.588;CH|3011|Bern|46.948|7.448;CH|1201|Genève|46.208|6.143;CH|9000|St. Gallen|47.424|9.376;LU|1111|Luxembourg|49.611|6.130;IT|00184|Roma|41.896|12.492;IT|20121|Milano|45.472|9.189;IT|39100|Bolzano|46.498|11.354;DK|1050|København|55.680|12.585;DK|8000|Aarhus|56.157|10.211;SE|11120|Stockholm|59.333|18.065;SE|41101|Göteborg|57.707|11.967;NO|0150|Oslo|59.909|10.746;PL|00001|Warszawa|52.232|21.006;CZ|11000|Praha|50.087|14.421;CZ|60200|Brno|49.195|16.608;CZ|30100|Plzeň|49.747|13.378;SK|81101|Bratislava|48.144|17.109;HU|1051|Budapest|47.499|19.051;SI|1000|Ljubljana|46.051|14.506`;
+const PC = {}; PC_RAW.split(";").forEach(r=>{const [cc,code,city,lat,lon]=r.split("|");PC[cc+"-"+code]={city,lat:+lat,lon:+lon}});
+
+/* ---------- Veri ---------- */
+/* Ortak veri: Supabase (Frankfurt). Kayıtlar asla silinmez; her değişikliğin eski hali sunucuda "history" tablosunda saklanır. */
+const SUPA_URL="https://paojawgjfckmavwzwzhl.supabase.co", SUPA_KEY="sb_publishable_WUnaTgBFQ1oKY4IMLvlwGw_2XmSmUwm";
+const EMAIL={mustafa:"mustafa@sevkiyat.example.com",necdet:"necdet@sevkiyat.example.com",besar:"besar@sevkiyat.example.com"};
+const sb=supabase.createClient(SUPA_URL,SUPA_KEY,{auth:{persistSession:true,autoRefreshToken:true}});
+const PEND_KEY="sevkiyat-bekleyen";
+let S={addresses:[],vehicles:[],log:[],user:null};
+const synced={addresses:new Map(),vehicles:new Map()};
+function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,8)}
+function readPend(){try{return JSON.parse(localStorage.getItem(PEND_KEY))||{rows:{},logs:[]}}catch(e){return {rows:{},logs:[]}}}
+function writePend(p){try{localStorage.setItem(PEND_KEY,JSON.stringify(p))}catch(e){}}
+let pend=readPend();
+/* save(): değişen kayıtları bulur, önce telefona (gönderilmeyi bekleyen) yazar, sonra sunucuya gönderir */
+function save(){
+  for(const tbl of ["addresses","vehicles"])for(const r of S[tbl]){const js=JSON.stringify(r);if(synced[tbl].get(r.id)!==js)pend.rows[tbl+":"+r.id]={tbl,id:r.id,data:JSON.parse(js)}}
+  writePend(pend);flush();
+}
+function logIt(txt){const l={id:uid(),t:Date.now(),txt,who:S.user?owner(S.user).name:""};S.log.unshift(l);pend.logs.push(l);writePend(pend)}
+let flushing=false,retryT=null;
+async function flush(){
+  if(flushing||!S.user)return;flushing=true;clearTimeout(retryT);
+  try{
+    const rows=Object.values(pend.rows);
+    for(const tbl of ["addresses","vehicles"]){const list=rows.filter(r=>r.tbl===tbl);if(!list.length)continue;
+      const {error}=await sb.from(tbl).upsert(list.map(r=>({id:r.id,data:r.data})));if(error)throw error;
+      list.forEach(r=>{const k=tbl+":"+r.id;if(pend.rows[k]===r)delete pend.rows[k];synced[tbl].set(r.id,JSON.stringify(r.data))})}
+    if(pend.logs.length){const list=pend.logs.slice();
+      const {error}=await sb.from("log").upsert(list,{onConflict:"id",ignoreDuplicates:true});if(error)throw error;
+      pend.logs=pend.logs.filter(l=>!list.includes(l))}
+    writePend(pend);netMsg(null);
+  }catch(e){console.error(e);netMsg("Kaydedilemedi, internet bağlantısı bekleniyor…");retryT=setTimeout(flush,5000)}
+  finally{flushing=false;if(Object.keys(pend.rows).length||pend.logs.length)retryT=retryT||setTimeout(flush,1500)}
+}
+function netMsg(t){const el=document.getElementById("net");if(!el)return;el.textContent=t||"";el.hidden=!t}
+async function fetchAll(tbl,order){const out=[];for(let from=0;;from+=1000){
+  let q=sb.from(tbl).select(tbl==="log"?"id,t,who,txt":"id,data").range(from,from+999);q=order?q.order(order,{ascending:false}):q.order("id");
+  const {data,error}=await q;if(error)throw error;out.push(...data);if(data.length<1000)return out}}
+/* Sunucudaki son hali yükle; telefonda gönderilmeyi bekleyen değişiklikler üstüne yazılır */
+async function loadAll(){
+  const [ad,ve,lg]=await Promise.all([fetchAll("addresses"),fetchAll("vehicles"),fetchAll("log","t")]);
+  synced.addresses=new Map(ad.map(r=>[r.id,JSON.stringify(r.data)]));synced.vehicles=new Map(ve.map(r=>[r.id,JSON.stringify(r.data)]));
+  const merge=(tbl,list)=>{const m=new Map(list.map(r=>[r.id,r.data]));Object.values(pend.rows).filter(r=>r.tbl===tbl).forEach(r=>m.set(r.id,r.data));return [...m.values()]};
+  S.addresses=merge("addresses",ad);S.vehicles=merge("vehicles",ve);
+  const ids=new Set(lg.map(l=>l.id));S.log=pend.logs.filter(l=>!ids.has(l.id)).concat(lg).sort((a,b)=>b.t-a.t);
+}
+/* Canlı: diğer ortaklar bir şey değiştirince ekran kendiliğinden yenilenir */
+let chan=null,needRender=false;
+function busy(){const a=document.activeElement;return a&&a.closest&&a.closest("#app")&&/^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName)}
+function softRender(){if(busy()){needRender=true;return}needRender=false;const y=window.scrollY;render();window.scrollTo(0,y)}
+function applyRemote(tbl,row){if(!row||!row.id)return;
+  if(tbl==="log"){if(!S.log.some(l=>l.id===row.id)){S.log.unshift({id:row.id,t:row.t,who:row.who,txt:row.txt});S.log.sort((a,b)=>b.t-a.t)}if(view==="gecmis")softRender();return}
+  if(pend.rows[tbl+":"+row.id])return;const js=JSON.stringify(row.data);if(synced[tbl].get(row.id)===js)return;
+  synced[tbl].set(row.id,js);const i=S[tbl].findIndex(x=>x.id===row.id);if(i>=0)S[tbl][i]=row.data;else S[tbl].push(row.data);softRender()}
+function startLive(){if(chan)return;chan=sb.channel("ortak");
+  ["addresses","vehicles","log"].forEach(t=>chan.on("postgres_changes",{event:"*",schema:"public",table:t},p=>applyRemote(t,p.new)));
+  chan.subscribe()}
+function stopLive(){if(chan){sb.removeChannel(chan);chan=null}}
+async function refresh(){if(!S.user)return;try{await flush();await loadAll();softRender()}catch(e){console.error(e)}}
+document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible")refresh()});
+window.addEventListener("online",refresh);
+document.addEventListener("focusout",()=>setTimeout(()=>{if(needRender&&!busy())softRender()},50));
+const A=id=>S.addresses.find(a=>a.id===id);
+const geo=a=>PC[a.cc+"-"+a.code];
+const owner=id=>OWNERS.find(o=>o.id===id)||OWNERS[0];
+const fmtT=n=>(Math.round(n*10)/10).toLocaleString("tr-TR",{minimumFractionDigits:1,maximumFractionDigits:1});
+const fmtKm=n=>Math.round(n).toLocaleString("tr-TR")+" km";
+/* Sayı okuma: "1500", "1.500", "1.500,50", "5000,5" hepsi doğru okunur */
+function parseNum(x){let s=String(x??"").replace(/\s/g,"");if(!s)return NaN;if(s.includes(","))s=s.replace(/\./g,"").replace(",",".");else if(/^\d{1,3}(\.\d{3})+$/.test(s))s=s.replace(/\./g,"");return +s}
+const money=n=>(Math.round(n*100)/100).toLocaleString("tr-TR",{maximumFractionDigits:2});
+const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+
+/* ---------- Mesafe ve rota ---------- */
+function hav(p,q){const R=6371,r=Math.PI/180,dl=(q.lat-p.lat)*r,dn=(q.lon-p.lon)*r;const h=Math.sin(dl/2)**2+Math.cos(p.lat*r)*Math.cos(q.lat*r)*Math.sin(dn/2)**2;return 2*R*Math.asin(Math.sqrt(h))}
+const ROAD=1.3; // deneme: kuş uçuşu × 1,3 ≈ karayolu
+const dist=(p,q)=>hav(p,q)*ROAD;
+function pathLen(pts){let s=0,prev=SUBEN;for(const p of pts){s+=dist(prev,p);prev=p}return s}
+/* Suben'den başlayıp son adreste biten en kısa sıra: en yakın komşu + 2-opt + taşıma iyileştirmesi */
+function bestOrder(ids){
+  const pts=ids.map(id=>({id,...geo(A(id))}));
+  if(pts.length<2)return {order:pts.map(p=>p.id),km:pathLen(pts)};
+  let rest=[...pts],cur=SUBEN,route=[];
+  while(rest.length){let bi=0,bd=1e18;rest.forEach((p,i)=>{const d=dist(cur,p);if(d<bd){bd=d;bi=i}});cur=rest[bi];route.push(cur);rest.splice(bi,1)}
+  let best=pathLen(route),improved=true,guard=0;
+  while(improved&&guard++<200){improved=false;
+    for(let i=0;i<route.length-1;i++)for(let j=i+1;j<route.length;j++){const r2=route.slice(0,i).concat(route.slice(i,j+1).reverse(),route.slice(j+1));const L=pathLen(r2);if(L<best-1e-6){route=r2;best=L;improved=true}}
+    for(let i=0;i<route.length;i++)for(let j=0;j<route.length;j++){if(i===j)continue;const r2=[...route];const [x]=r2.splice(i,1);r2.splice(j,0,x);const L=pathLen(r2);if(L<best-1e-6){route=r2;best=L;improved=true}}
+  }
+  return {order:route.map(p=>p.id),km:best};
+}
+/* Araç ayarla: araç en az (kapasite − izin verilen boşluk) kadar dolsun; bu sınır içinde en az km.
+   Farklı doluluk seviyeleri için seçenekler üretilir: en dolu → en kısa yol. */
+function planOptions(cap,maxStops,forced,excluded,slack){
+  const W=x=>Math.round(x*10), C=W(cap);
+  const pool=S.addresses.filter(a=>a.status==="pool"&&!excluded.includes(a.id));
+  const f=pool.filter(a=>forced.includes(a.id)), cand=pool.filter(a=>!forced.includes(a.id)).sort((a,b)=>dist(SUBEN,geo(b))-dist(SUBEN,geo(a)));
+  const fw=f.reduce((s,a)=>s+W(a.takim),0);
+  if(fw>C)return {error:`Öncelikli adreslerin toplamı ${fmtT(fw/10)} takım, araç ise ${fmtT(cap)} takım. Öncelikli adres sayısını azalt veya daha büyük araç seç.`};
+  if(f.length>maxStops)return {error:`${f.length} öncelikli adres seçtin ama en fazla ${maxStops} adrese uğranacak.`};
+  const K=maxStops-f.length, R=C-fw, n=cand.length, fixed=f.map(a=>a.id);
+  // en fazla ne kadar doldurulabilir (DP)
+  const reach=[];let prev=Array.from({length:K+1},()=>new Uint8Array(R+1));prev[0][0]=1;reach.push(prev);
+  for(let i=0;i<n;i++){const w=W(cand[i].takim);const nx=prev.map(r=>r.slice());
+    for(let k=0;k<K;k++)for(let x=0;x+w<=R;x++)if(prev[k][x])nx[k+1][x+w]=1;reach.push(nx);prev=nx}
+  let bw=0,bk=0;for(let k=0;k<=K;k++)for(let x=R;x>=0;x--)if(prev[k][x]){if(x>bw||(x===bw&&k<bk)){bw=x;bk=k}break}
+  let full=[],k=bk,x=bw;
+  for(let i=n;i>0;i--){const w=W(cand[i-1].takim);if(k>0&&x>=w&&reach[i-1][k-1][x-w]){full.push(cand[i-1].id);k--;x-=w}}
+  const maxW=fw+bw;
+  const loadOf=ids=>ids.reduce((s,id)=>s+W(A(id).takim),0);
+  const kmOf=ids=>bestOrder(fixed.concat(ids)).km;
+  const floorW=Math.max(fw,Math.min(C-W(slack),maxW));
+  // aday listesi: rotaya yakın olanlar
+  function near(set,lim){const ref=[SUBEN,...fixed.concat(set).map(id=>geo(A(id)))];
+    return cand.map(a=>a.id).filter(id=>!set.includes(id)).map(id=>({id,d:Math.min(...ref.map(r=>dist(r,geo(A(id)))))})).sort((a,b)=>a.d-b.d).slice(0,lim).map(o=>o.id)}
+  function search(seed,minW){
+    let set=[...seed],cur=kmOf(set),g=0,better=true;
+    const ok=ns=>ns.length<=K&&loadOf(ns)+fw>=minW&&loadOf(ns)+fw<=C;
+    const tryS=ns=>{if(!ok(ns))return false;const km=kmOf(ns);if(km<cur-0.5||(Math.abs(km-cur)<=0.5&&loadOf(ns)>loadOf(set))){set=ns;cur=km;better=true;return true}return false};
+    while(better&&g++<40){better=false;const out=near(set,18);
+      lp:{for(const a of set)if(tryS(set.filter(i=>i!==a)))break lp;
+        for(const a of set)for(const b of out)if(tryS(set.filter(i=>i!==a).concat(b)))break lp;
+        for(const a of set)for(let p=0;p<out.length;p++)for(let q=p+1;q<out.length;q++)if(tryS(set.filter(i=>i!==a).concat(out[p],out[q])))break lp;
+        for(let p=0;p<set.length;p++)for(let q=p+1;q<set.length;q++)for(const b of out)if(tryS(set.filter(i=>i!==set[p]&&i!==set[q]).concat(b)))break lp;
+        for(const b of out)if(tryS(set.concat(b)))break lp;}
+    }
+    return ok(set)?{set,km:cur,w:loadOf(set)+fw}:null;
+  }
+  function insertSeed(minW,ratio){let set=[];
+    while(loadOf(set)+fw<minW){const order=bestOrder(fixed.concat(set)).order.map(id=>geo(A(id)));const pts=[SUBEN,...order];let best=null,bs=1e18;
+      for(const a of cand){if(set.includes(a.id)||set.length>=K||loadOf(set)+fw+W(a.takim)>C)continue;const g=geo(a);let c=1e18;
+        for(let i=0;i<pts.length;i++){const nx=pts[i+1];const cc=dist(pts[i],g)+(nx?dist(g,nx)-dist(pts[i],nx):0);if(cc<c)c=cc}
+        const sc=ratio?(c+5)/a.takim:c;if(sc<bs){bs=sc;best=a.id}}
+      if(!best)break;set.push(best)}
+    return set}
+  function solve(minW){
+    const seeds=[full,insertSeed(minW,true),insertSeed(minW,false)];let best=null;
+    for(const sd of seeds){if(loadOf(sd)+fw<minW)continue;const r=search(sd,minW);if(r&&(!best||r.km<best.km-0.5||(Math.abs(r.km-best.km)<=0.5&&r.w>best.w)))best=r}
+    return best}
+  const levels=[];for(let w=maxW;w>floorW;w-=5)levels.push(w);levels.push(floorW);
+  const opts=[];
+  for(const lv of [...new Set(levels)]){const r=solve(lv);if(!r)continue;
+    if(opts.some(o=>Math.abs(o.km-r.km)<1&&o.w===r.w))continue;
+    if(opts.length&&r.km>=opts[opts.length-1].km-5)continue; // daha az dolu ama kısa değilse anlamsız
+    opts.push(r)}
+  return {cap,maxStops,options:opts.map(o=>{const r=bestOrder(fixed.concat(o.set));return {order:r.order,km:r.km,load:o.w/10}})};
+}
+/* ---------- İkonlar ---------- */
+const I=(d)=>`<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${d}</svg>`;
+const IC={
+  nav:I('<path d="M3 11l19-9-9 19-2-8-8-2z"/>'),
+  folder:I('<path d="M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.7-.9l-.8-1.2A2 2 0 0 0 7.9 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2z"/><circle cx="12" cy="15" r="2"/><path d="M12 13v-3"/>'),
+  truck:I('<path d="M14 18V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v11a1 1 0 0 0 1 1h2"/><path d="M15 18H9"/><path d="M19 18h2a1 1 0 0 0 1-1v-3.65a1 1 0 0 0-.22-.62l-3.48-4.35A1 1 0 0 0 17.52 8H14"/><circle cx="17" cy="18" r="2"/><circle cx="7" cy="18" r="2"/>'),
+  plus:I('<path d="M12 5v14M5 12h14"/>'),
+  down:I('<path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M5 21h14"/>'),
+  share:I('<path d="M21 11.5a8.4 8.4 0 0 1-12.3 7.4L3 21l2.1-5.6A8.4 8.4 0 1 1 21 11.5z"/>'),
+  out:I('<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/>'),
+  back:I('<path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/>'),
+  file:I('<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M8 13h8M8 17h5"/>'),
+  clock:I('<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>'),
+};
+/* ---------- Görünüm durumu ---------- */
+let view="home", ui={};
+function go(v,extra){view=v;ui=extra||{};render();window.scrollTo({top:0})}
+function renderTop(){
+  const el=document.getElementById("topbar");
+  if(!S.user){el.innerHTML="";return}
+  el.innerHTML=`<div class="who">Merhaba, <b>${owner(S.user).name}</b></div>
+   <button class="btn" data-top="logout">${IC.out}Çıkış Yap</button>`;
+}
+document.getElementById("topbar").addEventListener("click",e=>{if(e.target.closest("[data-top=logout]"))logout()});
+const backBtn=(to="home",label="Ana sayfa")=>`<button class="btn back" data-act="go" data-to="${to}">${IC.back}${label}</button>`;
+/* Giriş: şifreler sayfada YOK; Supabase'de saklanır. Telefonda 5 yanlış denemeden sonra 15 dakika kilit. */
+const LOCK_KEY="sevkiyat-lock";
+function lockState(){try{return JSON.parse(localStorage.getItem(LOCK_KEY))||{n:0,until:0}}catch(e){return {n:0,until:0}}}
+function setLock(st){try{localStorage.setItem(LOCK_KEY,JSON.stringify(st))}catch(e){}}
+const ownerByEmail=em=>Object.keys(EMAIL).find(k=>EMAIL[k]===String(em||"").toLowerCase());
+let loginBusy=false;
+async function tryLogin(){const f=ui.login,pw=document.getElementById("pw")?.value.trim()||"";if(!f||!f.who||loginBusy)return;
+  const st=lockState();if(st.until>Date.now()){f.err=`Çok fazla yanlış deneme. ${Math.ceil((st.until-Date.now())/60000)} dakika sonra tekrar dene.`;render();return}
+  loginBusy=true;let ok=false,net=false;
+  if(/^\d{6}$/.test(pw)){const {error}=await sb.auth.signInWithPassword({email:EMAIL[f.who],password:pw});ok=!error;net=error&&!/invalid/i.test(error.message||"")}
+  loginBusy=false;
+  if(net){f.err="Bağlanılamadı. İnternet bağlantını kontrol et.";render();return}
+  if(!ok){st.n=(st.n||0)+1;if(st.n>=5){st.until=Date.now()+15*60000;st.n=0}setLock(st);
+    f.err=st.until>Date.now()?"Çok fazla yanlış deneme. 15 dakika sonra tekrar dene.":"Şifre yanlış.";render();document.getElementById("pw")?.focus();return}
+  setLock({n:0,until:0});f.err=null;await enter(f.who,true)}
+async function enter(who,fresh){S.user=who;document.getElementById("app").innerHTML='<div class="login"><h2>Yükleniyor…</h2></div>';
+  try{await loadAll()}catch(e){console.error(e);netMsg("Veriler yüklenemedi, tekrar deneniyor…");setTimeout(()=>refresh(),4000)}
+  if(fresh)logIt("Giriş yaptı");startLive();flush();ui.login=null;go("home")}
+async function logout(){logIt("Çıkış yaptı");await flush();
+  if(Object.keys(pend.rows).length||pend.logs.length){netMsg("Değişiklikler henüz gönderilmedi. İnternet gelince tekrar dene.");return}
+  stopLive();await sb.auth.signOut();S={addresses:[],vehicles:[],log:[],user:null};synced.addresses.clear();synced.vehicles.clear();go("home")}
+function vLogin(){
+  const f=ui.login||(ui.login={who:null});
+  return `<div class="login"><div><h2>Giriş yap</h2></div>
+  <div class="panel steps"><div class="step ${f.who?"done":"active"}"><div class="n">1</div><div class="body"><div class="q">Kim giriş yapıyor?</div>
+   <div class="choices">${OWNERS.map(o=>`<button class="choice" data-act="who" data-id="${o.id}" aria-pressed="${f.who===o.id}">${o.name}</button>`).join("")}</div></div></div>
+   <div class="step ${f.who?"active":""}"><div class="n">2</div><div class="body"><div class="q">Şifre</div><input type="password" id="pw" inputmode="numeric" maxlength="6" autocomplete="off">${f.err?`<div class="msg bad">${esc(f.err)}</div>`:""}</div></div>
+   <button class="btn primary big" data-act="login" ${f.who?"":"disabled"}>Giriş yap</button></div></div>`;
+}
+function vHome(){
+  const pc=S.addresses.filter(a=>a.status==="pool").length, vs=S.vehicles.filter(v=>!v.deleted);
+  const active=vs.filter(v=>v.status!=="bitti").length;
+  return `<div class="home">
+   <button class="hcard" data-act="go" data-to="araclar"><span class="bubble">${IC.nav}</span><span><div class="t">Kaydedilen rotalar</div></span></button>
+   <button class="hcard" data-act="go" data-to="havuz"><span class="bubble">${IC.folder}</span><span><div class="t">Kaydedilen adresler</div></span></button>
+   <div class="bigbtns"><button class="btn primary big" data-act="go" data-to="ayarla" ${pc?"":"disabled"}>${IC.truck}Araç ayarla</button><button class="btn primary big" data-act="go" data-to="ekle">${IC.plus}Yeni adres ekle</button></div>
+   <div class="foot"><button class="btn ghost" data-act="go" data-to="gecmis">${IC.clock}Kayıt geçmişi</button></div>
+  </div>`;
+}
+function ownerTag(id){const o=owner(id);return `<span class="owner">${o.name}</span>`}
+function addrCell(a){const g=geo(a);return `<span class="cc">${a.cc}</span><span class="pc">${esc(a.code)}</span> <span class="city">${esc(g?g.city:"")}</span>`}
+
+/* ---------- HAVUZ ---------- */
+function vHavuz(){
+  const pool=S.addresses.filter(a=>a.status==="pool").sort((a,b)=>dist(SUBEN,geo(a))-dist(SUBEN,geo(b)));
+  const tot=pool.reduce((s,a)=>s+a.takim,0);
+  const by=OWNERS.map(o=>({o,t:pool.filter(a=>a.owner===o.id).reduce((s,a)=>s+a.takim,0),n:pool.filter(a=>a.owner===o.id).length}));
+  return `
+  ${backBtn()}
+  <div class="spread"><div><h2>Kaydedilen adresler</h2></div></div>
+  <div class="summary">
+    <div class="sum-top"><div><small>Bekleyen adres</small><b>${pool.length}</b>
+      <ul class="sub">${by.map(x=>`<li><span>${x.o.name}</span><b>${x.n} adres</b></li>`).join("")}</ul></div>
+     <div><small>Toplam yük</small><b>${fmtT(tot)} <span>takım</span></b>
+      <ul class="sub">${by.map(x=>`<li><span>${x.o.name}</span><b>${fmtT(x.t)} takım</b></li>`).join("")}</ul></div></div>
+  </div>
+  <div class="alist">${pool.map(a=>`<div class="acard"><div class="a-main"><div class="a-addr">${addrCell(a)}</div><div class="a-meta">${owner(a.owner).name} · <b>${fmtT(a.takim)} takım</b></div></div>
+   ${ui.confirmTrash===a.id?`<div class="a-confirm"><button class="btn small danger" data-act="trash" data-id="${a.id}">Evet, sil</button><button class="btn small" data-act="cancel">Vazgeç</button></div>`:`<button class="btn small" data-act="ask-trash" data-id="${a.id}">Sil</button>`}</div>`).join("")}</div>`;
+}
+
+/* ---------- ADRES EKLE (anket) ---------- */
+function vEkle(){
+  const f=ui.form||(ui.form={owner:null,cc:null,code:"",takim:"",check:null});
+  const s1=!!f.owner, s2=f.check&&f.check.ok, s3=s2&&+String(f.takim).replace(",",".")>0;
+  const st=(done,active)=>done?"done":active?"active":"";
+  return `${backBtn()}<div class="addform"><h2>Yeni adres ekle</h2></div>
+  <form class="panel steps addform" id="addForm" autocomplete="off">
+   <div class="step ${st(s1,!s1)}"><div class="n">${s1?"✓":"1"}</div><div class="body form-col"><div class="q">Bu adres kimin?</div>
+     <div class="choices">${OWNERS.map(o=>`<button type="button" class="choice" data-act="owner" data-id="${o.id}" aria-pressed="${f.owner===o.id}">${o.name}</button>`).join("")}</div></div></div>
+   <div class="step ${st(s2,s1&&!s2)}"><div class="n">${s2?"✓":"2"}</div><div class="body form-col"><div class="q">Posta kodu</div>
+     <input type="text" id="code" inputmode="text" autocapitalize="characters" autocomplete="off" spellcheck="false" value="${esc(f.code)}">
+     ${f.check&&!f.check.ok?`<div class="msg ${f.check.multi?"warn":"bad"}">${esc(f.check.text)}</div>`:""}
+     ${f.check&&f.check.multi?`<div class="choices multi">${f.check.multi.map(m=>`<button type="button" class="choice" data-act="pickcc" data-id="${m.cc}">${m.city} · ${COUNTRIES[m.cc]}</button>`).join("")}</div>`:""}</div></div>
+   <div class="step ${st(s3,s2&&!s3)}"><div class="n">${s3?"✓":"3"}</div><div class="body form-col"><div class="q">Bu adres kaç takımlık?</div>
+     <input type="text" id="takim" inputmode="decimal" autocomplete="off" value="${esc(f.takim)}"></div></div>
+   <div class="step"><div></div><div class="body form-col"><button type="submit" class="btn primary big" ${s1&&s3?"":"disabled"}>${IC.plus}Kaydet</button>
+    ${ui.added?`<div class="msg ok" style="text-align:center">${esc(ui.added)}</div>`:""}</div></div>
+  </form>
+  `;
+}
+function checkCode(){
+  const f=ui.form;const raw=document.getElementById("code").value;
+  const code=raw.toUpperCase().replace(/[\s-]/g,"");f.code=code;f.cc=null;
+  if(!code){f.check=null;render();return}
+  const hits=Object.keys(COUNTRIES).filter(cc=>PC[cc+"-"+code]).map(cc=>({cc,city:PC[cc+"-"+code].city}));
+  if(hits.length===1)setCountry(hits[0].cc,false);
+  else if(hits.length>1)f.check={ok:false,multi:hits,text:`${code} birden fazla ülkede var. Hangisi?`};
+  else f.check={ok:false,text:`${raw.trim()} hatalı bir posta kodu.`};
+  render();
+}
+function setCountry(cc,rer=true){const f=ui.form,g=PC[cc+"-"+f.code];f.cc=cc;
+  f.check={ok:true,text:`Bulundu: ${f.code} ${g.city} (${COUNTRIES[cc]}). Suben'e yaklaşık ${fmtKm(dist(SUBEN,g))}.`};if(rer)render()}
+
+/* ---------- ARAÇ AYARLA (anket) ---------- */
+function vAyarla(){
+  const f=ui.plan||(ui.plan={name:"",cap:"",stops:"",slack:"1",usePri:null,useEx:null,pri:[],ex:[],result:null,sel:0});
+  const pool=S.addresses.filter(a=>a.status==="pool").sort((a,b)=>dist(SUBEN,geo(a))-dist(SUBEN,geo(b)));
+  const list=(key,other)=>`<div class="pickers">${pool.map(a=>`<label class="pick"><input type="checkbox" data-act="pick" data-key="${key}" data-id="${a.id}" ${f[key].includes(a.id)?"checked":""} ${f[other].includes(a.id)?"disabled":""}>${addrCell(a)} · ${ownerTag(a.owner)} <span class="mono" style="margin-left:auto">${fmtT(a.takim)}</span></label>`).join("")}</div>`;
+  if(f.result&&f.show)return `<button class="btn back" data-act="editPlan">${IC.back}Araç ayarları</button>${resultView(f.result)}`;
+  const okCap=planReady(f), ps=planSteps(f);
+  const yesNo=(act,v)=>`<div class="choices two"><button class="choice" data-act="${act}" data-v="1" aria-pressed="${v===true}">Var</button><button class="choice" data-act="${act}" data-v="0" aria-pressed="${v===false}">Yok</button></div>`;
+  return `${backBtn()}<div class="addform"><h2>Araç ayarla</h2></div>
+  <div class="panel steps addform">
+   <div class="step ${ps[0]}" data-ps="0"><div class="n">${ps[0]==="done"?"✓":"1"}</div><div class="body form-col"><div class="q">Bu araca ne ad verelim?</div>
+     <input type="text" id="vname" autocomplete="off" value="${esc(f.name)}"></div></div>
+   <div class="step ${ps[1]}" data-ps="1"><div class="n">${ps[1]==="done"?"✓":"2"}</div><div class="body form-col"><div class="q">Bu araç kaç takımlık?</div>
+     <input type="text" inputmode="decimal" id="cap" autocomplete="off" value="${esc(f.cap)}"></div></div>
+   <div class="step ${ps[2]}" data-ps="2"><div class="n">${ps[2]==="done"?"✓":"3"}</div><div class="body form-col"><div class="q">En fazla kaç adrese uğrasın?</div>
+     <input type="text" inputmode="numeric" id="stops" autocomplete="off" value="${esc(f.stops)}"></div></div>
+   <div class="step ${ps[3]}" data-ps="3"><div class="n">${ps[3]==="done"?"✓":"4"}</div><div class="body form-col"><div class="q">Öncelikli adres var mı?</div>
+     ${yesNo("usePri",f.usePri)}${f.usePri?list("pri","ex"):""}</div></div>
+   <div class="step ${ps[4]}" data-ps="4"><div class="n">${ps[4]==="done"?"✓":"5"}</div><div class="body form-col"><div class="q">Bu araca girmesin dediğin adres var mı?</div>
+     ${yesNo("useEx",f.useEx)}${f.useEx?list("ex","pri"):""}</div></div>
+   <div class="step"><div></div><div class="body form-col"><button class="btn primary big" data-act="plan" ${pool.length&&okCap?"":"disabled"}>${IC.truck}Aracı ayarla</button></div></div>
+  </div>
+  `;
+}
+/* Adım renkleri: dolanlar yeşil ✓, ilk boş adım turuncu */
+function planSteps(f){const d=[!!f.name.trim(),+String(f.cap).replace(",",".")>0,parseInt(f.stops)>0,f.usePri===false||(f.usePri===true&&f.pri.length>0),f.useEx===false||(f.useEx===true&&f.ex.length>0)],first=d.indexOf(false);return d.map((x,i)=>x?"done":i===first?"active":"")}
+function syncPlanSteps(){const ps=planSteps(ui.plan);document.querySelectorAll("[data-ps]").forEach(el=>{const i=+el.dataset.ps,c=ps[i];el.classList.toggle("done",c==="done");el.classList.toggle("active",c==="active");el.querySelector(".n").textContent=c==="done"?"✓":String(i+1)})}
+function planReady(f){return planSteps(f).every(x=>x==="done")}
+/* Durak listesi: telefonda kaydırmadan okunacak kartlar, solda zaman çizgisi */
+function stopList(ids,editable){
+  let prev=SUBEN,left=ids.reduce((s,id)=>s+A(id).takim,0);const total=left;
+  const head=`<li class="stop start"><span class="sn sq">S</span><div class="sc"><div class="sl"><b>Suben gümrük</b><span class="big">${fmtT(total)} <small>takım yüklü</small></span></div></div></li>`;
+  const items=ids.map((id,i)=>{const a=A(id),g=geo(a),d=dist(prev,g);prev=g;left-=a.takim;
+    const top=`<div class="sl"><span><span class="pc">${esc(a.code)}</span> <span class="ct">${esc(g.city)}</span></span><span class="big">${fmtT(a.takim)} <small>takım</small></span></div>
+      <div class="sm"><span>${owner(a.owner).name}</span></div>`;
+    if(!editable)return `<li class="stop"><span class="sn">${i+1}</span><div class="sc">${top}</div></li>`;
+    return `<li class="stop"><span class="sn">${i+1}</span><div class="sc">
+      <dl class="fixed">
+        <div><dt>Posta kodu</dt><dd><span class="pc">${esc(a.code)}</span> <span class="ct">${esc(g.city)}</span></dd></div>
+        <div><dt>Kimin</dt><dd>${owner(a.owner).name}</dd></div>
+        <div><dt>Takım</dt><dd>${fmtT(a.takim)}</dd></div>
+      </dl>
+      <div class="sf">
+        <label>Paket sayısı<input type="text" inputmode="numeric" data-edit="packages" data-id="${id}" value="${esc(a.packages)}"></label>
+        <label>Kalan ödeme<input type="text" inputmode="decimal" data-edit="payment" data-id="${id}" value="${esc(a.payment)}"></label>
+        <label class="wide-m">Ürünün üstündeki kod<input type="text" autocapitalize="characters" data-edit="productCode" data-id="${id}" value="${esc(a.productCode)}"></label>
+      </div>
+      
+    </div></li>`}).join("");
+  return `<ol class="stops">${head}${items}</ol>`;
+}
+function routeRows(ids,editable,v){
+  let prev=SUBEN,left=ids.reduce((s,id)=>s+A(id).takim,0);
+  return ids.map((id,i)=>{const a=A(id),g=geo(a),d=dist(prev,g);prev=g;left-=a.takim;
+    if(!editable)return `<tr><td><span class="stopno">${i+1}</span></td><td>${addrCell(a)}</td><td>${ownerTag(a.owner)}</td><td class="r mono">${fmtT(a.takim)}</td><td class="r mono">${fmtT(Math.max(0,left))}</td><td class="r mono">${fmtKm(d)}</td></tr>`;
+    return `<tr><td><div class="row" style="flex-wrap:nowrap;gap:4px"><span class="stopno">${i+1}</span><span style="display:grid"><button class="btn small" style="padding:0 6px" data-act="up" data-id="${id}" ${i===0?"disabled":""} aria-label="Yukarı">▲</button><button class="btn small" style="padding:0 6px" data-act="down" data-id="${id}" ${i===ids.length-1?"disabled":""} aria-label="Aşağı">▼</button></span></div></td>
+     <td>${addrCell(a)}<div class="city">${fmtKm(d)} önceki noktadan</div></td>
+     <td><select data-edit="owner" data-id="${id}">${OWNERS.map(o=>`<option value="${o.id}" ${a.owner===o.id?"selected":""}>${o.name}</option>`).join("")}</select></td>
+     <td><input type="text" inputmode="decimal" data-edit="takim" data-id="${id}" value="${String(a.takim).replace('.',',')}" style="width:80px"></td>
+     <td><input type="text" inputmode="numeric" data-edit="packages" data-id="${id}" value="${esc(a.packages)}" style="width:80px"></td>
+     <td><input type="text" data-edit="productCode" data-id="${id}" value="${esc(a.productCode)}" style="width:110px"></td>
+     <td><input type="text" inputmode="decimal" data-edit="payment" data-id="${id}" value="${esc(a.payment)}" style="width:100px"></td>
+     <td><button class="btn small danger" data-act="unassign" data-id="${id}">Havuza geri</button></td></tr>`}).join("");
+}
+function loadBar(ids,cap){
+  return `<div class="loadbar" title="Yük dağılımı">${ids.map((id,i)=>{const a=A(id);return `<span style="width:${a.takim/cap*100}%;background:var(${owner(a.owner).c})">${i+1}</span>`}).join("")}</div>`;
+}
+/* Avrupa haritası (Natural Earth 1:50m, world-atlas paketinden; 1/20 derece birimli, fark kodlu) */
+const EU_LAND="329,640 -2,0 -7,0 -2,0 -4,0 -7,0 -1,0 -2,0 -1,0 -4,0 -2,0 -2,0 -2,0 -3,0 -2,0 2,0 -4,0 -7,0 -1,0 -9,0 -3,0 -3,0 -2,0 -12,0 -2,0 -5,0 -1,0 -2,0 -3,0 -2,0 2,0 1,0 1,0 1,0 2,0 5,0 2,0 2,0 8,0 2,0 3,0 5,0 4,0 2,0 2,0 1,0 -2,0 -2,0 -2,0 -4,0 -3,0 -1,0 -1,0 -2,0 1,0 6,0 -5,0 -5,0 -7,0 -2,0 -1,0 -1,0 2,0 3,0 5,0 4,0 1,0 -1,0 -3,0 -1,0 -2,0 -4,0 -1,0 -3,0 -1,0 -2,0 1,0 -2,0 -1,0 -2,0 -1,0 -2,0 -3,0 -5,0 -5,0 -2,0 -2,0 -2,0 -4,0 -1,0 -5,0 -7,0 -5,0 5,0 1,0 -2,0 -2,0 -2,0 -1,0 -2,0 -1,0 -3,0 -2,0 4,0 -3,0 -2,0 -2,0 -2,0 5,0 2,0 2,0 -1,0 -1,0 -1,0 -1,0 1,0 -1,0 -2,0 -3,0 -2,0 -1,0 -4,0 1,0 1,0 3,0 2,0 2,0 3,0 1,0 1,0 1,0 2,0 4,0 1,0 4,0 -1,0 -3,0 -5,0 -2,0 -1,0 -1,0 3,0 1,0 1,0 -2,0 -1,0 -1,0 2,0 2,0 1,0 1,0 2,0 1,0 2,0 -1,0 -5,0 2,0 -2,0 -2,0 2,0 2,0 -2,0 1,0 -2,0 -1,0 -1,0 -1,0 -2,0 -1,0 -1,0 -3,0 -2,0 -1,0 -2,0 -1,0 -2,0 -1,0 -2,0 -1,0 -1,0 -2,0 -2,0 2,0 -6,0 -5,0 -3,0 -2,0 -1,0 -4,0 -2,0 -1,0 -1,0 1,0 -3,0 -2,0 -1,0 -1,0 1,0 -2,0 -2,0 -1,0 -2,0 -4,0 -2,0 -2,0 -3,0 -1,0 -2,0 -4,0 -2,0 -2,0 1,0 -1,0 1,0 1,0 -2,0 -3,0 1,0 2,0 1,0 -2,0 -1,0 -3,0 -1,0 -1,0 -4,0 -4,0 -4,0 -6,0 -13,0 1,0 4,0 -5,0 -1,0 -2,0 -12,0 -1,0 -8,0 -10,0 -4,0 -6,0 -2,0 -2,0 -1,0 -2,0 -4,0 -2,0 -8,0 -8,0 -4,0 -3,0 -3,0 -3,0 -5,0 -9,0 -3,0 -3,0 -4,0 -2,0 -3,0 -3,0 -6,0 -5,0 -3,0 -3,0 3,0 2,0 -3,0 -2,0 -1,0 -11,0 -3,0 -2,0 -5,0 -4,0 -1,0 10,0 1,0 -12,0 -5,0 -1,0 -1,0 -6,0 -1,0 2,0 3,0 -9,0 -7,0 -3,0 -10,0 -6,0 -1,0 -3,0 -4,0 -4,0 -2,0 -2,0 -7,0 -5,0 -18,0 -5,0 -5,0 -13,0 -2,0 -4,0 -2,0 -2,0 -1,0 -3,0 -6,0 -4,0 -5,0 -4,0 -8,0 -3,0 1,0 -1,0 -1,0 -3,0 -2,0 -1,0 -2,0 -1,0 -3,0 -1,0 -1,0 1,0 2,0 2,0 2,0 -4,0 -2,0 3,0 -2,0 -2,0 -3,0 -3,0 -3,0 -1,0 -1,0 -3,0 5,0 2,0 2,0 2,0 3,0 1,0 3,0 2,0 3,0 7,0 9,0 9,0 2,0 3,0 4,0 9,0 3,0 6,0 4,0 3,0 2,0 2,0 -2,0 -2,0 3,0 7,2 1,3 1,5 0,1 8,7 5,6 2,1 4,2 15,6 8,4 5,2 3,4 8,13 8,18 1,2 3,0 3,1 2,0 2,2 2,-1 -1,-1 0,-2 2,-3 3,-3 5,-3 4,-2 6,-1 7,2 4,0 2,1 2,-1 4,-1 4,1 3,1 2,2 0,-2 2,-3 2,0 2,-1 5,0 4,0 4,0 2,0 5,2 3,2 3,1 3,3 2,2 4,1 9,4 2,0 3,-1 3,1 2,1 2,3 3,2 4,2 6,2 3,2 6,1 14,1 8,1 5,0 5,3 2,1 11,0 6,2 19,0 3,-1 2,-1 4,-2 2,-1 2,1 7,2 6,1 4,2 2,2 3,1 2,-2 7,-2 4,1 2,0 -1,3 5,-1 3,-1 4,-2 2,-1 5,1 9,1 4,1 5,3 2,1 11,3 1,0 2,-1 -1,-1 1,-2 1,1 0,1 2,0 2,0 2,-1 0,-3 3,-4 -1,-1 2,-1 2,1 1,2 4,1 4,2 2,0 1,-2 1,-2 -2,0 -2,-2 -3,-5 -3,-2 -3,-2 0,-1 0,-1 0,-3 2,-3 2,-2 2,-1 4,-2 0,-2 1,-2 0,-2 1,-2 -3,-4 -2,-3 -3,-4 -3,-3 -7,-4 -2,-1 -1,-2 0,-1 0,-2 2,-4 3,-2 3,-2 5,1 0,-2 0,-2 3,0 1,1 1,2 3,-2 1,-4 2,-1 -1,-1 3,-1 1,0 2,0 3,-2 3,0 10,-5 3,0 6,-1 8,2 3,0 5,-2 2,0 4,0 6,-2 2,0 3,-3 2,-1 14,-2 1,-2 2,-3 0,-3 1,0 2,0 2,0 2,0 3,0 5,0 7,0 7,0 11,0 10,0 2,0 5,0 9,0 6,0 4,0 3,0 6,0 2,0 6,0 2,0 -2,0 -1,0 2,2 1,2 5,5 5,3 9,4 5,0 3,0 4,3 1,0 3,-1 7,0 3,0 3,-2 5,-1 3,-1 4,-2 1,-3 -1,-1 0,-1 4,-3 10,-1 2,0 3,-2 2,-1 7,0 4,0 4,0 1,0 2,0 1,0 3,0 3,0 10,0 11,0 6,0 10,0 6,0 1,0 5,0 2,0 11,0 6,0 3,0 2,0 2,0 3,0 3,0 3,0 7,0 2,0 2,0 1,0 2,0 2,0 3,0 7,0 -7,0 3,0 3,0 3,0 1,0 3,0 6,0 2,0 5,0 2,0 4,0 -2,0 -3,0 -3,0 3,0 2,0 1,0 3,0 2,0 -2,0 2,0 5,0 1,0 2,0 3,0 6,0 1,0 4,0 5,0 5,0 6,0 4,0 2,0 4,0 2,4 2,8 2,5 2,2 0,3 1,1 1,2 1,3 2,2 3,8 2,3 1,4 3,4 2,1 2,1 0,2 -2,4 0,2 0,2 1,3 -1,2 0,1 0,1 -3,3 2,6 1,1 1,2 -1,3 -2,3 2,2 3,2 3,3 0,2 0,1 -3,2 -3,-1 -2,-1 -1,-1 -2,-1 -1,-1 -1,-1 -3,-1 -4,2 -5,2 -3,1 -2,0 -2,0 -6,-4 -6,-5 -1,-1 -5,-2 -4,-1 -1,0 -7,-1 -3,0 -3,-1 -5,1 -3,2 -2,1 -3,4 -3,2 -4,1 -9,4 -2,0 -6,1 -6,0 -1,-1 -1,-5 -1,-2 0,-3 -2,-1 -2,1 -1,0 -3,-1 -6,-2 -2,0 -7,2 -3,1 -1,2 -1,2 -1,2 0,2 -2,0 -1,-1 -2,1 -2,0 -4,2 -4,0 -2,-2 -2,-1 -2,0 2,2 -6,0 -3,-1 -2,0 -2,0 2,1 2,1 6,0 1,1 2,1 3,2 -2,1 -10,-1 -6,0 -2,0 0,2 1,1 1,-1 4,1 -1,2 -2,1 -2,1 -2,1 0,2 -1,2 -2,1 4,2 0,3 0,2 -2,0 -4,1 -1,0 -2,2 -2,1 -2,0 -2,-1 -1,1 -2,1 0,2 1,0 1,2 -2,2 1,1 1,1 1,0 2,-2 0,-1 0,-2 1,-1 1,1 1,0 2,-1 5,1 -3,1 -1,1 -1,1 -1,2 -1,1 3,2 2,2 -2,1 -1,-1 -1,1 0,1 1,2 -3,3 0,2 2,1 2,2 -1,1 -7,-1 -3,0 -5,-1 0,1 1,3 0,4 1,3 2,0 4,4 5,4 5,0 2,1 4,0 1,-1 3,-2 5,1 1,0 1,1 -2,2 2,0 3,0 -1,-1 0,-1 7,0 7,0 2,0 5,0 -1,1 -1,1 -1,0 -1,1 3,2 2,0 9,1 7,1 -10,1 -2,1 -3,2 -1,1 0,2 1,2 1,0 3,1 12,-2 9,1 9,-2 9,0 2,1 2,3 13,6 4,3 5,1 8,2 7,2 2,0 16,-1 11,0 5,2 3,0 -1,-2 0,-1 2,-2 2,-1 5,-2 7,1 2,0 1,0 3,-5 2,-2 2,-2 2,0 2,2 1,0 3,0 4,-1 1,-2 8,-2 6,0 3,-2 2,-1 0,1 0,2 0,-2 0,2 0,2 0,1 0,3 0,2 0,4 0,2 0,2 0,1 0,4 0,5 0,5 0,2 0,2 0,2 0,2 0,1 0,4 0,2 0,1 0,6 0,3 0,8 0,1 -3,7 -3,-1 -3,0 -1,1 -2,1 -1,1 -1,2 -2,1 -5,2 -6,2 -1,1 5,1 2,1 -3,1 -1,0 1,1 1,1 3,-1 2,-2 2,-1 1,1 8,2 0,1 0,1 -1,0 0,1 1,2 4,3 2,4 1,1 0,-2 0,3 0,3 0,3 -2,0 -2,3 -1,2 2,0 2,-1 1,2 0,2 0,1 0,3 0,2 0,2 0,1 0,-1 0,1 0,-2 0,-1 -3,0 -2,0 -4,-1 -4,-3 -3,0 -3,0 -2,-1 -3,-3 -2,1 -3,0 -2,0 -3,-2 -2,0 -4,0 -3,-1 -9,-4 -3,-4 -1,-1 -1,0 -2,-1 3,3 2,1 0,1 -1,2 -4,-4 -2,0 -2,-1 0,-3 0,-1 1,-2 2,-3 5,-6 2,-2 2,-1 2,0 4,2 2,0 3,-1 2,1 1,1 3,0 3,0 2,-1 -1,-2 -1,-1 0,-2 -1,-2 -3,0 -4,0 -4,-1 -1,1 -2,1 -3,0 -2,0 -2,-2 -4,-2 -1,-2 -4,0 -4,0 -5,-2 -3,-3 -4,-3 -4,0 -3,0 -2,1 -4,2 1,1 1,2 1,4 0,2 -1,2 -3,2 -3,-1 -1,1 -6,3 -3,0 -3,0 -1,0 -1,1 7,4 6,3 3,0 3,2 4,2 0,2 -1,1 -2,0 -1,-1 -4,2 -1,1 -5,-2 -3,1 -6,-1 -3,1 -6,2 -2,1 -2,0 -1,0 1,1 1,0 2,0 0,2 -3,0 -3,0 -2,1 -1,1 3,0 4,-1 5,0 4,0 1,0 3,2 -4,-1 -4,1 -2,1 -2,1 0,2 0,1 0,3 -2,2 0,1 -2,1 2,-2 0,-2 1,-1 0,-5 -1,-1 -1,0 -3,0 -2,0 0,3 -1,-1 -2,-2 -2,-1 -3,0 -7,-1 -1,-2 -1,-2 -1,-1 -3,-4 -6,-5 -4,-1 -2,-1 -2,0 -2,0 -1,-1 -1,-2 1,-1 2,-4 -1,-2 0,-1 -1,-4 -1,-2 -1,-1 -10,-2 0,2 0,1 1,2 -2,0 -1,-1 -1,-3 -1,-1 0,-2 -1,-2 2,0 -1,-1 -3,-3 -1,-1 0,-6 -1,-4 0,-1 -1,-5 -2,-2 -3,1 -3,-1 -2,-3 -1,0 -1,-1 -1,-4 0,-5 -2,-1 -1,0 -5,-5 3,-1 1,-1 2,-3 4,-3 0,-2 0,-2 1,-2 3,-4 3,-2 12,-4 2,0 0,-2 -1,-2 -1,-1 -3,-1 -10,2 -3,1 -1,-1 -4,-1 -3,0 -5,-1 -1,-2 -4,-3 -6,-3 -4,-1 -6,-5 -2,-3 -2,0 -1,-1 0,2 1,1 0,2 2,2 2,1 5,2 2,2 -4,-1 -5,0 -3,0 -2,0 -1,2 -1,1 -3,2 -7,1 -4,1 -1,0 -3,1 -2,-1 -4,-2 -2,0 -3,2 -1,0 -2,-1 -3,-2 -3,-2 -3,1 -4,0 0,-1 3,-3 -1,-1 0,-2 2,0 2,0 3,-1 2,-2 1,-2 -2,1 -2,2 -2,0 -3,1 -2,0 -1,0 1,-3 2,-1 1,-1 1,-2 -1,-1 -2,1 -4,4 -4,1 0,-3 5,-3 -6,1 -1,2 -1,2 -4,2 -4,2 -1,2 1,2 -2,0 -1,-1 -2,-1 -1,-1 1,-2 -1,-1 -1,-4 1,-1 5,-5 1,-3 2,-2 2,-1 3,-3 1,-1 1,-2 -3,-2 -1,0 0,2 -3,3 -2,-1 -1,-1 1,-2 1,-1 0,-1 2,0 -2,-2 -3,-1 -2,0 -2,0 2,-1 2,-1 4,-1 3,-2 2,0 2,-2 4,-1 3,-3 3,-1 2,-1 1,-2 1,-4 0,-3 0,-2 -2,0 -1,2 -3,2 -3,2 -2,1 -2,-1 -4,-1 -2,-1 -1,0 1,-1 1,-1 0,-2 1,-2 1,0 2,0 1,-1 1,-1 1,-1 -5,-1 -2,-1 -1,0 0,2 -2,1 -1,0 -2,1 -1,1 -1,-1 0,-3 2,-2 3,-6 1,-3 0,-2 0,-2 1,-2 1,-2 -1,0 -2,2 -3,3 -1,2 -2,0 -2,0 -2,-5 0,-2 -1,1 -1,0 0,3 0,1 -3,4 -2,0 0,1 -1,2 -2,-1 -1,0 0,-2 0,-2 -1,-1 -3,2 -3,5 0,2 2,2 0,2 -3,3 -3,2 -1,0 -1,2 -2,2 -1,0 0,1 3,3 2,3 3,-1 2,1 2,1 2,2 2,-1 6,-2 6,-2 3,-1 2,-1 2,-1 0,2 1,0 3,0 2,2 -2,1 -1,0 -2,0 -2,1 -1,0 -4,2 -4,2 0,-1 -2,-1 -1,0 -6,1 -3,-1 -2,0 -1,0 -2,0 -2,-1 -1,2 -1,2 0,-2 -1,-1 -2,0 -2,1 -1,2 -1,3 -3,3 -1,0 -1,1 1,2 2,0 3,-1 2,0 0,2 -1,1 -1,0 -3,0 -2,-1 -2,1 -3,2 -2,2 -3,2 -2,4 -2,2 -2,1 0,2 -1,1 -2,4 -7,3 -2,2 -1,1 -1,1 2,0 1,0 0,1 -2,3 1,4 1,3 0,3 1,3 -1,1 0,3 1,2 1,1 1,4 -3,1 -2,0 -3,2 -2,2 -4,4 -5,3 0,1 -1,0 -2,0 -3,2 -4,2 -6,3 -5,1 -7,2 -4,1 2,1 1,0 10,-4 -1,1 -1,1 -5,3 -4,2 -5,4 -6,1 -4,2 -3,0 -2,-1 -2,0 -1,0 -1,2 -3,3 -3,1 -3,2 -6,5 -2,2 2,0 2,1 1,0 2,-1 -1,2 -3,1 -5,4 -2,2 0,2 0,3 -1,3 -4,2 -2,2 -3,1 -2,0 -1,-1 0,-3 -3,-3 -1,-1 -2,-2 -1,0 -3,3 -2,2 -1,1 0,2 -2,5 2,0 1,1 1,1 2,1 -3,2 -2,0 -2,-1 -5,1 -1,0 -2,-2 -3,-1 -3,-1 -3,-1 -2,-1 -1,0 2,2 -4,-1 -2,-1 0,-2 -1,-2 2,-1 2,-3 2,-2 0,-1 -1,-1 -1,-1 -2,1 -1,-3 1,-5 2,-5 2,-1 4,-3 4,-2 8,-4 4,-2 1,-1 3,-3 2,-4 2,-7 2,-3 4,-4 7,-5 6,-4 6,-2 5,-1 11,1 2,0 2,-1 1,-2 -1,-1 -2,-1 -3,-2 0,-2 2,-1 11,-4 11,-4 3,-1 4,-3 10,-4 2,-2 6,-4 2,-3 1,-2 -2,-2 0,-2 -1,-2 -3,1 -2,2 -5,7 -7,0 -2,1 -3,1 -1,2 -3,0 -2,-1 -3,-2 -3,-4 -2,-6 -1,-2 2,-2 4,-1 4,-2 2,-2 0,-5 1,-3 -1,-2 -3,1 -4,-1 -3,-2 -1,-2 0,-4 0,-2 -5,-3 -3,-3 -1,-2 -1,-1 -7,0 -1,2 0,3 1,1 2,1 2,4 0,2 1,1 2,2 3,0 0,4 -2,1 -1,3 -1,4 -3,6 -2,4 -1,3 -2,1 -4,0 -2,0 -7,4 0,1 1,2 -1,1 -1,2 -1,2 -2,0 -3,0 -1,0 -2,0 -1,-1 1,3 -3,1 -3,0 -2,0 0,1 -4,6 -2,2 -2,0 -2,0 -4,1 -2,0 -1,0 -2,-1 -2,1 -3,2 -4,1 -9,7 -2,3 -6,3 -3,4 -3,1 -4,1 -2,0 -2,0 2,1 -1,2 -4,4 -3,1 -1,2 -2,1 -1,0 -2,0 0,2 1,2 -1,1 -1,3 -3,3 -1,7 -1,2 -3,1 -6,2 -9,4 -2,0 -5,2 -4,0 -4,-1 -5,-4 -4,-5 -2,0 -5,-2 -5,-1 -1,0 -1,0 -3,-1 -1,-1 -7,-4 -3,-2 -1,-2 -2,-1 -1,-1 -4,0 -4,-2 -1,1 -5,0 -3,2 -5,1 -2,2 -2,0 -2,0 -1,1 -1,1 -2,0 -1,-1 -1,0 -2,-1 -1,1 -5,1 -4,1 -1,0 -1,1 -1,1 -3,-1 -1,-1 -1,-1 -11,-5 -2,-2 -2,-4 0,-1 1,-5 2,-3 1,-2 1,0 0,-1 -2,-1 -1,0 0,-2 1,-1 1,-3 -2,-2 -3,-2 -14,-6 -3,-3 -1,0 -11,-2 -7,-2 -3,-1 -5,-3 -2,-2 2,0 2,-2 -4,-1 -1,-1 -1,0 -5,-6 -4,-4 -2,-2 -2,-2 -6,-8 0,-2 3,-7 1,-2 2,-1 4,-2 1,-1 -1,-1 -4,-2 -7,-3 -2,-3 -1,-2 -2,-1 -1,-3 -1,-2 -1,-3 0,-1 2,-1 -1,-1 -1,0 -3,-1 -8,0 -6,-3 -3,-3 -3,-6 -3,-3 -2,-1 -2,1 -3,1 -3,-1 -1,-1 -3,-1 -2,1 -5,0 -2,0 -4,-1 -3,1 -5,0 -10,-1 -2,0 -1,-1 -3,-3 -6,0 -4,-2 -2,-1 -2,-2 0,-2 -2,0 0,-2 -2,0 -2,0 -3,1 -3,2 -2,0 -2,3 -2,2 0,2 0,1 -3,1 0,2 1,2 2,1 -1,0 -2,-1 -2,2 -8,5 1,1 -2,-1 -5,0 -4,0 -2,-1 -7,-3 -2,0 -4,2 -7,0 -2,0 -3,-1 -2,1 -2,-2 -1,1 1,2 3,6 0,3 0,3 0,2 -2,2 2,5 0,2 -2,3 5,-1 -2,2 -1,0 -1,0 -1,0 -4,-1 -2,0 0,2 -1,2 1,1 2,0 2,1 0,1 0,2 1,2 3,2 -1,-1 -2,-1 -3,-3 -1,-2 -2,-1 -2,0 -1,0 -1,1 -1,1 1,1 0,2 1,3 1,3 -1,2 2,1 1,1 2,2 3,5 3,6 -1,2 1,1 2,7 1,3 1,3 0,3 0,1 0,1 -2,3 -1,5 0,2 1,1 -2,0 -1,1 0,2 2,2 -1,0 -1,3 3,2 1,1 -2,1 0,1 1,1 -1,1 0,2 0,2 -4,-1 -1,1 2,2 -2,1 -2,1 -1,1 -1,2 0,1 1,2 2,1 2,1 3,2 4,-1 2,1 3,1 1,0 2,1 0,1 0,2 2,1 3,1 3,0 3,1 2,0 2,0 2,-1 3,-2 4,-1 3,1 6,0 3,0 5,0 2,0 5,1 4,-1 7,-1 4,-1 12,-2 4,0 6,1 2,1 3,0 3,0 2,0 2,-1 7,-2 2,2 2,0 5,-1 5,-1 3,-1 4,1 3,1 4,1 3,2 3,9 2,11 2,2 1,1 -1,1 -1,-1 0,9 1,4 1,4 3,-2 2,-1 2,-2 1,-4 1,-1 2,-1 -1,1 -1,1 -2,6 -1,1 -2,2 -5,3 -1,1 2,0 1,0 0,1 -1,2 -1,6 0,2 -2,0 -1,1 -2,0 -8,3 -2,4 -3,2 -1,1 0,1 2,3 -2,1 -1,1 -1,0 1,1 2,1 3,0 2,0 1,-1 -4,2 -8,0 -2,0 -1,0 -1,2 1,0 1,1 -1,1 -1,1 -2,0 -2,-1 0,2 -1,1 -1,-1 -2,0 -2,0 -2,2 -1,0 -3,0 -1,0 -2,1 -8,2 -3,0 -3,-1 -2,0 -2,2 -1,1 -5,2 1,1 3,0 2,1 1,0 -2,1 -1,1 -2,1 2,0 2,0 3,0 -1,1 -1,0 -3,0 -2,0 -2,0 -1,2 1,2 3,1 10,2 4,0 3,0 3,1 2,1 4,1 5,-1 4,-4 2,-1 5,2 7,0 2,-1 1,1 1,1 1,-1 8,0 1,0 -2,1 -1,2 -1,8 -2,2 -2,4 -1,2 0,2 3,0 2,-1 5,1 2,0 0,-2 0,-2 2,-2 4,0 4,-1 5,0 7,-1 3,1 3,1 5,1 -2,0 -3,1 -1,1 2,3 8,3 6,1 7,2 3,2 2,2 2,1 0,10 0,1 1,2 2,1 3,1 11,1 2,1 8,3 5,2 3,1 2,0 3,0 2,-1 4,0 2,1 2,-1 2,1 -1,0 -3,1 -4,-1 -2,1 -2,0 -2,1 -1,1 1,1 5,0 3,-1 5,-2 1,0 2,0 -3,1 -1,1 -2,1 4,0 -1,1 -4,3 2,3 1,1 2,1 4,3 2,2 1,3 3,7 0,1 1,2 2,0 4,0 6,3 2,2 2,1 6,3 4,0 6,0 4,1 5,0 2,-1 1,-1 2,-1 3,0 -3,2 1,2 0,1 2,2 2,1 7,0 7,0 3,-3 -1,-2 2,0 2,1 0,2 3,-1 1,-3 1,3 -1,2 1,3 1,1 6,0 6,0 2,-1 6,-4 1,-1 3,0 -3,1 -7,5 -2,1 -3,0 -1,1 -2,0 0,6 -1,1 -1,0 -3,0 0,1 4,2 2,0 0,2 -1,1 -2,2 -2,2 -1,2 0,2 0,1 -2,2 2,0 0,4 -1,1 -5,2 -4,2 1,6 0,2 -2,3 1,3 0,6 2,0 1,0 3,-1 2,0 1,-1 1,0 2,3 3,2 2,0 1,1 2,-1 1,-1 0,2 1,4 -3,1 -2,-1 -2,-2 -3,-4 -3,0 -3,-1 -2,1 -2,1 0,1 4,4 3,2 4,0 3,1 2,0 5,0 3,0 2,2 5,5 3,2 6,0 6,3 1,0 -2,-2 -1,-2 2,-2 -1,-1 0,-3 -1,-2 -2,-3 -1,-4 0,-4 2,-1 2,-1 7,0 2,-1 -1,-2 -1,-1 -2,-1 -3,-1 -1,0 -2,2 -2,-1 -1,-1 -1,-4 -1,-3 -2,0 -2,1 -2,-1 1,-1 1,-1 -2,-1 -2,-1 -3,-2 -1,-1 0,-2 1,-1 0,-2 0,-1 -3,-2 -1,-1 2,0 2,-1 2,-1 0,-2 3,-1 1,-1 1,-2 1,-1 -2,-2 -2,-1 6,1 1,-2 3,1 8,-3 4,2 1,0 1,-2 -1,-2 -4,-2 1,-2 1,0 4,0 6,-1 1,0 5,3 2,1 6,0 1,2 3,1 2,1 4,2 4,0 2,-1 3,0 2,-2 6,-3 6,0 1,-3 1,-3 2,-1 1,-1 5,0 5,-2 2,0 -1,1 0,2 -4,1 -3,0 -3,0 -2,1 -1,1 0,1 -1,1 -1,1 5,-1 3,-2 4,-1 6,2 12,3 12,2 3,0 3,1 1,1 1,0 1,2 4,2 7,1 2,1 5,2 12,1 5,1 4,0 5,-2 4,-1 1,-1 -2,0 -4,2 -1,0 3,-5 1,-1 4,-2 3,0 8,1 3,1 4,2 2,2 2,2 0,2 0,1 3,1 6,0 2,1 4,2 3,3 1,1 2,2 1,2 1,2 0,-2 -1,-3 -2,-1 -2,-2 -5,-4 2,-1 1,0 3,-1 2,0 4,1 0,3 1,3 -1,2 1,2 -2,3 -2,4 0,4 -1,5 1,8 0,3 4,3 2,1 1,3 0,2 1,1 6,5 4,1 6,1 6,1 1,-1 1,-1 8,-4 2,-2 3,-4 7,-3 6,1 2,1 5,2 2,2 0,2 -1,6 -1,3 0,1 3,5 1,3 1,1 0,1 -3,1 -1,0 -1,-1 -1,-1 -3,-1 -2,1 -5,1 -1,2 0,1 -3,2 -1,1 1,1 2,1 -2,1 -2,2 1,1 -1,2 1,1 0,2 3,1 3,0 6,1 -1,1 3,1 4,1 4,0 6,1 11,0 1,1 0,2 2,0 4,0 13,-2 3,0 5,-2 2,0 8,0 11,-1 2,1 1,2 0,2 -1,1 1,2 2,0 1,-2 3,0 1,1 1,1 1,1 2,-1 3,0 2,0 2,1 1,1 2,1 1,1 10,-1 9,-2 1,2 -2,1 -1,1 -3,1 -3,2 -3,0 -4,0 -6,0 -5,3 -3,1 -3,2 0,1 2,-1 1,1 0,1 -1,1 -2,1 -6,-3 -8,0 -3,-1 -3,0 -1,-1 -4,2 -4,-1 -2,-1 -5,0 -2,0 -1,-1 -1,1 1,2 1,1 -2,-1 -1,-2 -1,-1 -4,0 -3,1 -2,0 1,0 1,-2 -2,0 -2,-1 -2,-1 -2,2 -2,-1 -2,-1 -4,0 -2,-1 -4,-1 -2,0 -5,-1 -2,-1 -1,-1 -2,1 -7,-1 -6,-1 -2,0 -3,1 -2,-1 -3,-2 -4,-1 -1,1 3,1 2,1 -1,2 -1,0 -2,1 -2,2 -1,0 -1,-2 -1,-1 -1,0 -1,0 -4,0 0,1 0,1 0,1 2,0 1,1 -2,0 2,2 -2,1 -5,0 -6,2 -2,0 -1,2 -1,0 -3,-1 -1,0 -2,1 -1,2 0,1 0,2 -1,2 1,2 1,2 1,3 0,2 0,2 1,0 -1,1 2,0 -1,2 -2,3 -1,2 -3,2 1,2 1,2 0,2 -1,1 -3,1 0,2 -1,2 0,2 1,1 1,1 5,3 0,2 4,0 -2,1 0,2 5,1 2,-1 4,1 4,1 0,2 -1,1 2,0 -1,1 2,0 3,2 0,1 4,1 5,2 3,1 2,1 5,3 2,0 1,2 4,2 1,0 2,3 6,2 3,4 2,1 0,1 2,0 2,1 4,1 4,0 1,-1 2,0 0,1 -1,1 2,1 0,1 -2,2 1,2 0,2 1,3 -2,1 -8,2 -2,0 -1,0 -2,2 0,2 -1,-1 -3,0 -3,0 -2,0 -5,0 -4,1 -2,-1 -4,0 -4,0 -1,-1 -1,0 -4,1 -3,1 -3,-1 -1,0 -2,1 -1,0 -1,-1 -1,-1 -1,-3 -3,0 1,-1 -1,0 -4,0 1,-2 -1,-1 -4,0 -3,0 0,-1 1,-1 0,-1 -3,1 1,-1 2,-2 -3,-3 -3,-1 -2,-1 -1,-2 1,-1 2,-1 1,-1 1,-2 2,-2 -1,-1 -4,-2 -5,-2 -5,-7 -1,0 -5,-2 -2,-1 -3,-1 -6,-1 -2,-1 -2,-2 -1,0 -1,1 -2,0 0,-2 -3,2 -1,-1 -1,-2 -4,-2 -5,0 1,-1 -2,0 -2,0 -1,0 0,-1 -1,-2 -3,0 -1,0 3,-1 0,-1 -5,-2 -2,-1 -2,0 -2,1 -1,1 0,-1 1,-3 -1,-1 2,0 -1,-1 -2,-2 -3,0 -1,-1 -2,0 -1,1 -2,0 -1,-1 2,-2 2,-2 2,0 -2,-1 -1,-1 -1,-3 -1,-1 0,-2 0,-1 1,-2 -2,0 -3,0 0,-1 -1,-2 0,-1 0,-2 1,-2 0,-1 0,-2 0,-3 2,-4 -1,-1 0,-1 2,-1 2,0 2,0 2,-1 0,-1 2,0 2,1 2,0 1,-2 3,-2 2,-1 3,0 3,-2 0,-2 1,-1 4,0 1,-1 2,-2 1,-2 -1,-2 -1,0 -4,-2 -1,-1 -1,-1 -4,-1 -1,0 -1,-1 -2,-1 -1,1 -4,-2 4,-1 1,1 1,0 2,1 1,-1 1,1 1,0 1,0 1,-1 -2,-1 -2,0 -1,-2 -1,-1 -4,-2 -3,-1 -2,-1 -2,0 -2,-1 -4,-1 -2,-1 -5,-2 -2,-1 -7,0 -7,0 -2,0 2,0 2,-1 2,0 4,0 2,0 3,-2 -3,-1 -3,0 1,-3 1,-2 -1,-1 0,-5 -2,0 -1,-2 1,-1 0,-2 0,-2 1,-1 0,-1 -3,-4 0,-1 1,-3 -2,-2 -1,-3 -1,-2 -3,-2 -1,-2 -3,-6 -2,-1 -1,0 -3,0 -1,1 -3,0 -3,-1 -6,0 -5,0 -2,0 1,-2 -2,-1 -2,1 -2,-1 -1,0 -3,-2 -1,-1 0,-2 2,-2 1,-2 -3,-3 -2,0 -6,1 -10,-2 -8,1 1,2 0,1 0,1 1,2 -1,1 0,1 -2,2 -5,5 -2,2 -1,1 5,-1 2,0 -1,2 -1,1 -1,1 2,0 2,0 1,1 0,2 -2,1 -2,0 -3,3 -3,2 -5,7 -2,4 -2,0 -1,1 0,2 0,2 -3,0 -1,5 -3,1 -2,2 0,5 -2,1 -2,-1 0,1 0,2 -1,4 0,3 -1,1 0,2 0,1 3,1 2,-1 -1,1 -4,1 -3,0 -1,0 -2,1 -2,2 -2,2 0,4 -1,2 0,1 -1,-1 0,-2 -1,-1 -2,-1 0,-1 1,-1 0,-2 -4,-5 -1,-1 -2,1 -3,-2 -2,0 -1,2 -3,1 -2,0 2,-1 1,-1 -2,-1 -1,0 -5,-2 2,-1 -2,-1 -1,0 -1,-1 -5,-3 -9,-5 -4,-2 -3,-1 -2,0 -3,-1 -9,-2 -5,1 -4,-1 -2,1 0,1 -2,1 -1,-1 -3,0 0,2 2,0 -2,1 -2,0 -2,0 -7,3 -1,1 -6,1 -2,2 -2,3 0,1 1,3 1,1 5,-1 5,-2 2,2 3,1 -5,-1 -2,1 -2,1 1,2 0,1 0,2 2,1 3,2 2,1 2,1 -2,0 -3,-1 -3,-2 -3,-1 -3,0 -1,-1 -2,0 -2,-2 -2,-1 -4,0 0,2 1,4 1,2 1,2 2,0 1,1 2,0 4,-1 2,2 3,0 4,1 -3,0 -2,0 -2,0 -2,0 0,1 1,1 4,3 1,1 1,1 1,2 4,2 3,1 1,-1 0,-3 0,-1 2,4 1,1 2,1 3,1 -3,0 -9,-2 -4,-1 -1,-1 -3,-2 -1,-1 0,-2 -2,0 -2,-1 -3,-2 -1,-1 -3,-2 -2,-1 -1,-1 -2,0 0,2 0,2 2,1 0,2 0,1 1,1 3,-1 2,0 4,1 -3,1 -3,0 -2,1 -2,2 -1,3 8,4 2,1 -1,0 -3,-2 -4,-1 -3,2 -1,1 -1,3 0,2 0,2 2,0 2,0 2,0 4,0 10,1 6,0 2,0 4,1 4,0 2,-1 1,-1 1,-1 1,-1 0,1 0,2 10,2 1,0 -4,0 -1,2 2,2 -2,-1 -1,-1 0,-2 -3,-1 -4,0 -3,1 -3,0 0,2 -2,-1 -1,-2 -2,0 -6,0 -9,0 -4,-1 -2,0 -5,2 -2,1 0,3 0,1 3,0 2,0 2,1 -2,0 -2,1 -1,1 -2,1 -1,1 -1,2 1,2 1,0 2,0 7,0 7,-1 4,-1 9,0 6,1 -7,0 -5,0 -10,1 -4,1 -4,0 -2,0 -1,2 1,2 2,1 1,-1 1,0 1,1 2,1 1,1 3,2 2,0 2,0 2,0 2,-1 2,0 8,1 2,1 -5,0 -4,-1 -2,0 0,2 2,0 0,2 2,0 2,0 3,0 3,1 4,0 7,-1 4,-1 1,0 2,0 -2,1 0,1 5,1 6,1 -1,0 -13,-1 -3,1 -3,0 -1,0 -5,-1 0,2 3,2 1,1 8,1 3,2 2,0 2,0 2,0 5,0 2,-2 2,-1 6,-2 -5,4 -2,1 -2,1 1,2 1,1 7,0 1,1 0,1 -3,0 -2,1 -1,1 5,2 1,0 4,1 6,-1 -1,-2 1,-1 3,2 4,1 2,0 2,1 3,-3 1,0 2,-2 2,1 2,0 3,0 5,0 2,0 1,0 -1,2 1,2 1,0 3,1 3,0 3,1 2,1 -1,2 -2,0 2,1 3,1 -3,1 -2,0 -2,-1 -4,-2 1,0 2,-1 -2,-2 -12,-4 -6,-1 -3,0 0,2 -1,0 -2,2 -2,0 -1,0 0,2 2,1 3,1 2,2 1,2 5,2 6,4 6,2 2,2 3,0 3,2 2,0 4,1 2,1 -2,0 -3,-1 -2,0 0,2 1,1 3,2 13,4 2,-1 1,-1 4,0 5,2 3,3 -2,-1 -2,-1 -4,-1 -2,0 -1,0 -2,1 -1,0 -1,1 -1,1 2,3 1,1 2,2 6,3 1,2 2,1 4,0 1,0 -1,1 -4,1 12,3 5,0 2,0 3,1 3,1 -2,0 -5,-1 -4,0 -2,0 -1,0 -5,0 -1,4 1,2 2,0 0,2 2,1 3,0 1,1 2,1 4,0 3,0 -5,1 -1,1 2,1 1,0 2,0 2,2 2,1 2,0 3,1 2,0 3,0 4,1 12,0 -2,1 -10,0 -4,0 -2,0 1,2 4,3 4,1 3,0 4,-1 2,-1 1,0 2,-2 1,2 2,1 -4,0 -3,1 -2,1 -1,1 2,1 1,1 -6,-1 -4,-1 -1,1 0,1 0,1 5,3 2,0 2,0 3,-1 2,1 2,0 -5,1 -1,1 4,1 3,1 4,1 3,1 1,-1 1,-3 3,-3 1,0 -1,2 1,1 1,0 -1,1 -1,1 -2,3 5,2 4,0 5,-1 2,0 3,0 5,1 3,1 1,0 -1,0 -1,1 -5,-1 -12,0 -1,1 1,2 1,1 5,1 5,0 5,2 2,2 1,2 3,2 8,1 -1,2 1,1 2,3 1,0 3,0 2,-2 3,-1 4,0 1,1 -3,1 -3,1 0,1 2,0 1,0 3,0 2,1 0,1 4,3 10,1 0,-4 -1,-2 0,-2 2,2 2,4 2,2 2,2 2,0 1,1 2,0 2,-2 -1,-3 0,-2 -1,-1 -5,-4 1,0 2,0 6,4 5,-1 -2,2 -2,1 0,1 0,3 1,1 5,0 2,0 2,0 2,0 2,2 4,0 3,-1 4,-1 3,-2 -1,4 -2,1 -4,1 -4,2 -1,0 4,1 5,0 4,1 1,0 3,0 2,-1 2,1 0,1 6,0 3,0 2,-1 1,-1 1,-3 3,-1 1,-1 2,0 -1,1 1,3 1,1 5,3 5,2 3,0 5,3 1,1 1,0 -3,1 0,2 4,1 4,2 2,0 2,0 4,-1 2,-2 2,0 1,0 1,1 2,0 2,0 2,-1 1,0 1,0 -2,-1 -4,-3 -4,-2 -1,-1 -1,-4 -3,-2 0,-1 1,-1 3,1 4,2 1,2 11,5 5,4 5,2 3,1 2,-2 -2,-2 -2,-2 2,0 0,-2 -1,-2 1,-1 7,2 1,2 2,2 1,1 2,1 5,0 -6,2 2,2 5,2 3,0 1,-1 7,0 5,-1 0,-3 -1,-1 -2,0 -6,-2 -1,0 2,-1 4,1 1,-1 -1,-1 0,-3 -1,-2 0,-1 3,2 3,2 1,2 2,3 3,2 2,0 5,0 2,0 2,-2 2,0 5,-1 1,-1 2,0 3,1 2,0 4,-2 -1,-1 4,0 4,-1 7,-2 0,-1 0,-2 -10,-1 -4,-2 -6,0 -23,1 0,-1 16,-2 0,-3 0,-1 2,-1 2,0 4,0 2,-1 1,1 1,2 1,0 2,0 1,-2 2,1 2,0 2,0 3,0 4,-1 8,-1 2,0 2,0 3,2 2,1 2,-1 -1,2 9,-1 3,-1 8,-1 1,-1 0,-1 -2,-1 -3,0 -11,1 -2,0 1,-1 4,-1 1,-1 5,0 5,-1 2,0 -1,-1 6,1 3,0 1,0 0,-1 -1,-2 -1,-3 -3,-1 -1,-1 4,1 2,1 4,3 1,0 11,0 2,0 10,-1 3,-1 3,1 2,0 1,1 11,-2 15,-4 23,-6 5,-6 0,-1 0,-6 0,2 0,-3 0,-1 0,-2 0,-2 0,-1 0,-5 0,-1 0,-3 0,-1 0,-2 0,-4 0,-1 0,-8 0,-3 0,-3 0,-2 -2,1 -5,1 -7,2 -6,0 -5,1 -8,0 -17,2 -3,1 -11,3 -4,-1 -2,0 -2,1 1,1 -6,1 -5,0 -3,1 -3,1 -2,-1 -7,2 -3,1 -3,2 2,2 -11,1 -10,0 2,0 4,-1 3,-1 3,-1 -1,-2 5,-1 3,-2 2,-1 5,0 0,-2 0,-1 4,-1 2,-1 3,0 -1,-1 -2,-1 -3,0 1,-1 3,0 11,-1 6,-2 6,-4 2,-2 0,-2 -1,-1 -1,-1 -2,-3 -1,-1 -3,-1 3,-2 2,-3 3,-3 1,-2 0,-2 2,-1 -2,-1 0,-3 4,-2 5,-2 3,0 4,1 3,-1 7,-3 3,-3 1,-1 7,-1 5,-1 8,-2 2,0 4,2 6,1 1,2 0,1 0,2 -1,2 -2,1 -2,1 -6,-1 -3,1 -2,0 -3,2 -6,4 -3,1 -1,2 0,2 2,0 3,1 2,3 3,1 2,0 8,-2 9,-4 0,-1 0,-3 0,-3 0,2 0,2 0,3 0,2 0,1 0,4 0,2 0,2 0,2 0,1 0,3 0,2 0,2 0,1 0,2 0,3 0,4 0,1 0,-2 0,-2 0,-1 0,-2 0,-1 0,-1 0,1 0,3 0,3 0,2 0,3 0,3 0,3 0,1 0,2 0,1 0,2 0,2 0,2 0,4 0,7 0,1 0,2 0,2 0,2 0,5 0,1 0,-2 0,-1 0,-4 0,-4 0,-3 0,-2 0,-2 0,-1 0,-4 0,-2 0,-1 0,-1 0,-2 0,-4 0,-2 0,-2 0,3 0,2 0,5 0,1 0,2 0,1 0,2 0,1 0,2 0,2 0,1 0,3 0,3 0,2 0,2 0,2 0,1 0,-2 0,-2 0,2 0,1 0,2 0,3 0,3 0,2 0,-1 0,-2 0,-1 0,-2 0,-1 0,-2 0,-2 0,-1 0,-2 0,-1 0,-1 0,3 0,3 0,1 0,2 0,-2 0,2 0,5 0,-1 0,1 0,2 0,-2 0,-3 0,-3 0,-3 0,-2 0,1 0,1 0,3 0,2 0,2 0,2 0,2 0,3 0,6 0,3 0,1 0,3 0,-1 0,-1 0,-3 0,-2 0,-2 0,-2 0,-2 0,-1 0,-3 0,-1 0,-3 0,-3 0,-2 0,-2 0,-2 0,5 0,5 0,3 0,2 0,4 0,3 0,2 0,2 0,2 0,-2 0,1 0,2 0,2 0,3 0,2 0,1 0,3 0,4 0,5 0,1 0,1 0,2 0,2 0,2 0,3 0,1 0,1 0,3 0,3 0,3 0,3 0,8 0,5 0,6 0,-1 0,-2 0,-1 0,-1 0,-4 0,-3 0,-5 0,-2 0,-4 0,-2 0,-2 0,-1 0,-2 0,-3 0,-3 0,-4 0,-3 0,-7 0,-1 0,-1 0,-1 0,-3 0,-7 0,-6 0,-2 0,-5 0,-1 0,-3 0,-2 0,-1 0,-2 0,-3 0,-1 0,-1 0,-3 0,-2 0,-2 0,-3 0,-2 0,-2 0,-1 0,-2 0,-12 0,-1 0,-1 0,-3 0,-1 0,-2 0,-1 0,1 0,1 0,2 0,-1 0,1 0,2 0,-2 0,-2 0,-1 0,-2 0,-2 0,-1 0,-2 0,2 0,3 0,1 0,5 0,1 0,3 0,2 0,5 0,1 0,6 0,1 0,3 0,2 0,1 0,3 0,2 0,2 0,5 0,2 0,2 0,3 0,-2 0,-2 0,-4 0,-3 0,-3 0,-7 0,-3 0,-2 0,-1 0,-1 0,2 0,1 0,3 0,2 0,4 0,1 0,3 0,2 0,3 0,5 0,1 0,3 0,3 0,-3 0,2 0,4 0,2 0,2 0,2 0,2 0,8 0,1 0,4 0,3 0,1 0,8 0,3 0,2 0,2 0,1 0,8 0,1 0,2 0,2 0,1 0,1 0,1 0,3 0,3 0,1 0,2 0,2 0,-2 0,-2 0,-2 0,-1 0,-1 0,-2 0,-1 0,-2 0,-3 0,-4 0,-3 0,-2 0,-2 0,-1 0,-3 0,-1 0,-1 0,1 0,-4 0,-1 0,1 0,2 0,3 0,1 0,2 0,3 0,3 0,3 0,1 0,2 0,-3 0,1 0,3 0,1 0,2 0,3 0,1 0,-4 0,-1 0,-1 0,-3 0,-4 0,-2 0,-1 0,-3 0,-3 0,-4 0,-2 0,-2 0,-2 0,-2 0,-2 0,-2 0,-2 0,2 0,1 0,3 0,4 0,1 0,-3 0,-2 0,-2 0,-4 0,-2 0,-2 0,-1 0,-1 0,1 0,1 0,2 0,1 0,1 0,3 0,2 0,2 0,5 0,2 0,4 0,3 0,2 0,1 0,1 0,4 0,1 0,3 0,3 0,1 0,2 0,1 0,2 0,3 0,1 0,3 0,2 0,2 0,1 0,1 0,2 0,1 0,1 0,1 0,1 0,-2 0,-2 0,-1 0,-1 0,3 0,2 0,1 0,-1 0,-2 0,-7 0,-2 0,-1 0,1 0,2 0,1 0,1 0,2 0,2 0,1 0,2 0,2 0,-2 0,-5 0,-2 0,-2 0,-2 0,-2 0,-2 0,1 0,2 0,2 0,1 0,2 0,2 0,2 0,1 0,1 0,2 0,1 0,-3 0,-2 0,-3 0,-1 0,-1 0,-2 0,1 0,2 0,-2 0,3 0,1 0,1 0,1 0,2 0,1 0,2 0,-1 0,1 0,-2 0,-1 0,2 0,1 0,-1 0,-1 0,-1 0,-2 0,-1 0,-1 0,-2 0,-2 0,-1 0,-2 0,-2 0,-2 0,-1 0,-2 0,-3 0,-3 0,-1 0,3 0,1 0,3 0,-3 0,-1 0,-3 0,-7 0,1 0,2 0,1 0,-2 0,-2 0,-2 0,-1 0,-2 0,-2 0,-6 0,-1 0,-2 0,-1 0,1 0,-3 0,-1 0,2 0,1 0,4 0,2 0,2 0,1 0,3 0,3 0,2 0,3 0,-2 0,-4 0,-2 0,-1 0,-1 0,1 0,1 0,2 0,-4 0,-1 0,-1 0,-2 0,-1 0,1 0,1 0,2 0,1 0,1 0,2 0,1 0,-3 0,2 0,3 0,4 0,1 0,4 0,1 0,1 0,2 0,2 0,1 0,2 0,2 0,3 0,-1 0,-2 0,-1 0,-2 0,-1 0,-1 0,-2 0,-2 0,-1 0,1 0,-3 0,-1 0,-2 0,4 0,1 0,-3 0,-2 0,-1 0,-1 0,-2 0,-1 0,1 0,1 0,2 0,6 0,2 0,1 0,-2 0,-2 0,-1 0,-2 0,-2 0,-1 0,-2 0,-1 0,-2 0,-2 0,-1 0,-1 0,-3 0,2 0,-1 0,-2 0,-4 0,-3 0,2 0,2 0,1 0,-1 0,-2 0,-3 0,-3 0,-3 0,-2 0,-2 0,-2 0,-1 0,-1 0,-2 0,-3 0,-1 0,-1 0,-2 0,-1 0,-3 0,-2 0,-5 0,-1 0,-1 0,-2 0,-5 0,-2 0,2 0,3 0,2 0,3 0,3 0,2 0,2 0,3 0,1 0,2 0,1 0,-3 0,-1 0,4 0,-3 0,-3 0,-4 0,-2 0,-1 0,-4 0,-2 0,5 0,2 0,2 0,3 0,4 0,2 0,1 0,2 0,2 0,3 0,-2 0,-2 0,-1 0,1 0,-1 0,-2 0,-2 0,-3 0,-2 0,-1 0,-2 0,-5 -1040,0 0,-2 0,-1 0,-2 0,-1 0,-2 0,1 0,-1 0,-2 0,-1 0,-3 0,-1 0,2 0,3 0,-3 0,-1 0,-1 0,-1 0,-2 0,-8 0,-2 0,-2 0,-1 0,-2 0,1 0,-1 0,-2 0,-1 0,-2 0,-2 0,-2 0,-2 0,-1 0,-3 0,-1 0,-2 0,-2 0,2 0,-4 0,1 0,1 0,2 0,1 0,1 0,2 0,1 0,2 0,1 0,2 0,1 0,1 0,2 0,-2 0,-2 0,-2 0,1 0,1 0,2 0,-2 0,-3 0,-2 0,-2 0,-1 0,-4 0,-1 0,-1 0,-2 0,-2 0,-1 0,-1 0,-2 0,-3 0,-1 0,2 0,1 0,-1 0,-1 0,-1 0,-2 0,-1 0,1 0,1 0,1 0,-1 0,-2 0,-1 0,-3 0,-1 0,-2 0,-2 0,-2 0,-1 0,-1 0,-1 0,-1 0,-2 0,-1 0,-1 0,-2 0,-1 0,2 0,-3 0,-1 0,1 0,1 0,2 0,1 0,-1 0,-1 0,-2 0,2 0,3 0,1 0,1 0,2 0,1 0,2 0,1 0,2 0,3 0,2 0,2 0,2 0,1 0,-2 0,2 0,2 0,1 0,2 0,2 0,2 0,1 0,2 0,2 0,2 0,-3 0,-1 0,3 0,-1 0,-2 0,-1 0,-1 0,-2 0,-2 0,-2 0,-2 0,-3 0,-1 0,-1 0,-1 0,-3 0,-1 0,-3 1040,0 0,-3 0,-2 0,-3 0,1 0,2 0,3 0,1 0,2 0,-1 0,-2 0,-2 0,-1 0,1 0,2 0,-2 0,-1 0,-2 0,1 0,1 0,2 0,-1 0,-1 0,-2 0,-1 0,-1 0,2 0,-1 0,1 0,1 0,-4 0,-2 0,-3 0,-2 0,2 0,1 0,-1 0,-1 0,-2 0,-3 0,-3 0,-4 0,-1 0,-2 0,-1 0,1 0,-2 0,-1 0,-1 0,-2 0,-2 0,-2 0,-1 0,-1 0,-3 0,-1 0,-2 0,-2 0,-2 0,-2 0,5 0,1 0,2 0,1 0,1 0,-2 0,-1 0,-1 0,-1 0,-3 0,-1 0,-3 0,-1 0,-2 0,-2 0,-2 0,-1 0,-2 0,-3 0,-3 0,1 0,-1 0,-2 0,-1 0,-1 0,-2 0,-1 0,-1 0,-2 0,-1 0,-2 0,-5 0,-1 0,-2 0,-2 0,-4 0,-2 0,2 0,2 0,1 0,5 0,2 0,-2 0,-1 0,-2 0,-7 0,-2 0,1 0,2 0,2 0,2 0,3 0,1 0,2 0,-3 0,-2 0,-2 0,-4 0,-2 0,3 0,1 0,-2 0,-1 0,2 0,1 0,-1 0,-2 0,-1 0,-1 0,-2 0,-4 0,-4 0,-3 0,-3 0,-1 0,-3 0,-2 0,-5 0,-4 0,-3 0,-2 0,-2 0,-1 0,-1 0,-2 0,4 0,-1 0,-3 0,-3 0,-1 0,-3 0,-1 0,-4 0,-2 0,-2 0,-2 0,-1 0,-1 0,-3 0,-2 0,-4 0,-2 0,-2 0,4 0,2 0,1 0,2 0,-1 0,-1 0,-3 0,-1 0,-1 0,-6 0,-4 0,-3 0,-3 0,-3 0,-1 0,-3 0,-2 0,-3 0,-1 0,-3 0,1 0,-1 0,-2 0,-3 0,-2 0,-1 0,-3 0,-4 0,-3 0,-1 0,-1 0,-2 0,-1 0,-2 0,-3 0,2 0,-3 0,-1 0,-3 0,2 0,-1 0,-2 0,-3 0,-1 0,-4 0,-1 0,-2 0,-4 0,-6 0,-4 0,-1 0,-1 0,-2 0,-4 0,-4 0,2 0,3 0,1 0,2 0,1 0,9 0,9 0,3 0,3 0,2 0,2 0,3 0,15 0,4 0,11 0,7 0,7 0,3 0,9 0,5 0,13 0,1 0,5 0,3 0,3 0,3 0,2 0,1 0,2 0,1 0,1 0,4 0,2 0,1 0,3 0,2 0,2 0,2 0,2 0,2 0,7 0,5 0,3 0,1 0,5 0,4 0,2 0,2 0,3 0,3 0,2 0,3 0,1 0,1 0,3 0,1 0,3 0,2 0,1 0,3 0,2 0,1 0,3 0,4 0,5 0,1 0,2 0,-1 0,1 0,1 0,1 0,3 0,-3 0,-2 0,-2 0,-1 0,-1 0,-2 0,-2 0,-3 0,-2 0,-1 0,-2 0,-2 0,3 0,-1 0,-2 0,-12 0,-1 0,-3 0,-2 0,2 0,2 0,3 0,-1 0,1 0,3 0,2 0,1 0,5 0,2 0,3 0,2 0,-3 0,3 0,-1 0,-2 0,-1 0,-3 0,-1 0,-5 0,-1 0,-1 0,-3 0,-4 0,-2 0,-3 0,-3 0,-6 0,-4 0,-1 0,-2 0,-2 0,-1 0,-1 0,-2 0,2 0,-2 0,-2 0,-2 0,-1 0,-2 0,2 0,-2 0,-3 0,2 0,-3 0,4 0,1 0,1 0,2 0,4 0,2 0,-2 0,-1 0,1 0,2 0,1 0,2 0,-2 0,-2 0,-1 0,-3 0,-1 0,2 0,-2 0,1 0,2 0,-5 0,-1 0,4 0,1 0,-1 0,-2 0,-2 0,-3 0,-5 0,-2 0,-2 0,-3 0,-2 0,-2 0,-7 0,-1 0,-2 0,-3 0,-2 0,-2 0,-2 0,-3 0,-3 0,-6 0,-3 0,-1 0,-6 0,-4 0,-1 0,-2 0,-2 0,-2 0,-2 0,-3 0,-4 0,-4 0,-2 0,-2 0,-3 0,-3 0,-2 0,-6 0,-2 0,-3 0,5 0,2 0,1 0,2 0,-3 0,-1 0,-1 0,-2 0,-1 0,-4 0,-1 0,-1 0,3 0,3 0,1 0,-3 0,-3 0,-1 0,-2 0,5 0,2 0,4 0,2 0,1 0,2 0,-2 0,2 0,-2 0,-3 0,-1 0,-4 0,-4 0,-2 0,-3 0,-3 0,-2 0,-2 0,2 0,-1 0,-3 0,-1 0,-4 0,-2 0,-2 0,-2 0,-2 0,-1 0,-3 0,-3 0,-1 0,-2 0,-3 0,-4 0,-3 0,-4 0,-1 0,-4 0,-5 0,-8 0,-2 0,-3 0,-1 0,-2 0,-3 0,-5 0,-3 0,-1 0,-2 0,-1 0,-5 0,-5 0,-2 0,-2 0,-2 0,-2 0,-2 0,-2 0,-5 0,-5 0,-7 0,-1 0,-2 0,-3 0,-4 0,-2 0,-4 0,-6 0,-3 0,-3 0,-5 0,-5 0,-1 0,-2 0,-4 0,-3 0,-2 0,-1 0,-3 0,-8 0,-1 0,-1 0,-3 0,-3 0,-2 0,-3 0,-5 0,-2 0,-2 0,-2 0,-1 0,2 0,2 0,7 0,1 0,-1 0,-3 0,1 0,3 0,-2 0,-4 0,-4 0,-1 0,-1 0,-1 0,-3 0,-3 0,-2 0,-1 0,-2 0,-1 0,-1 0,-2 0,-2 0,-2 0,-2 0,-2 0,-2 0,-2 0,-4 0,-3 0,-2 0,-2 0,-2 0,-3 0,-1 0,-2 0,-3 0,-1 0,-2 0,-3 0,-2 0,-2 0,-3 0,-2 0,-1 0,-2 0,-2 0,-1 0,-1 0,-4 0,-2 0,-1 0,-1 0,-2 0,-8 0,-6 0,-4 0,-9 0,-4 0,-2 0,-4 0,-2 0,-4 0,-1 0,-2 0,-2 0,-1 0,-2 0,-2 0,-5 0,-4 0,-3 0,-3 0,-2 0,-1 0,-1 0,-1 0,-2 0,2 0,1 0,-1 0,-1 0,-2 0,-2 0,3 0,-2 0,-1 0,-1 0,-2 0,-1 0,2 0,1 0,1 0,-2 0,-3 0,1 0,-2 0,-2 0,3 0,1 0,2 0,1 0,2 0,1 0,3 0,2 0,2 0,1 0,2 0,3 0,2 0,1 0,1 0,1 0,1 0,2 0,1 0,1 0,2 0,1 0,1 0,2 0,2 0,2 0,3 0,2 0,1 0,2 0,2 0,1 0,-1 0,-2 0,1 0,1 0,3 0,1 0,3 0,2 0,3 0,1 0,2 0,2 0,2 0,-1 0,-2 0,2 0,3 0,-2 0,-2 0,-1 0,2 0,1 0,3 0,1 0,3 0,1 0,4 0,1 0,2 0,2 0,1 0,1 0,9 0,3 0,2 0,1 0,2 0,1 0,-2 0,1 0,2 0,1 0,3 0,-2 0,-1 0,-1 0,-1 0,-2 0,-1 0,-5 0,-2 0,-2 0,-1 0,-1 0,-2 0,-1 0,-1 0,-2 0,3 0,4 0,2 0,3 0,1 0,1 0,1 0,2 0,2 0,1 0,2 0,2 0,2 0,2 0,4 0,3 0,2 0,2 0,3 0,2 0,-1 0,-3 0,-1 0,-2 0,-7 0,-5 0,-2 0,-3 0,-2 0,-2 0,-3 0,-4 0,-1 0,-2 0,3 0,-1 0,-6 0,-3 0,-2 0,-4 0,-2 0,-2 0,-2 0,-1 0,-3 0,-2 0,-1 0,-2 0,-3 0,-3 0,-1 0,-2 0,-1 0,2 0,2 0,3 0,2 0,2 0,3 0,-2 0,-3 0,-2 0,-1 0,2 0,-2 0,-1 0,-2 0,-2 0,-3 0,-1 0,-1 0,-2 0,2 0,-2 0,-2 0,-2 0,-1 0,-1 0,-1 0,-1 0,-2 0,-4 0,-1 0,-1 0,1 0,2 0,-2 0,-2 0,-1 0,-2 0,-1 0,-1 0,-2 0,-1 0,-3 0,-2 0,-1 0,-4 0,-2 0,-3 0,-2 0,-3 0,-2 0,-4 0,-1 0,-2 0,-6 0,-3 0,-1 0,-3 0,-5 0,-5 0,-3 0,-2 0,-2 0,-2 0,-2 0,-2 0,-3 0,-1 0,-2 0,-1 0,2 0,-2 -2,0 -2,0 -2,0 -1,0 -2,0 -2,0 -2,0 -3,0 1,0 -2,0 -5,0 -1,0 -2,0 -1,0 -4,0 -5,0 -3,0 -1,0 -4,0 -2,0 -3,0 -4,0 -4,0 -2,0 -5,0 -3,0 -2,0 2,0 2,0 3,0 -2,0 -2,0 -3,0 -3,0 -3,0 -2,0 -3,0 -6,0 -3,0 -4,0 -3,0 -2,0 -1,0 -5,0 -1,0 -2,0 -1,0 -2,0 -2,0 -1,0 -1,0 4,0 2,0 3,0 1,0 3,0 4,0 3,0 3,0 1,0 2,0 3,0 2,0 1,0 2,0 6,0 4,0 3,0 3,0 7,0 4,0 2,0 2,0 4,0 -3,0 -2,0 3,0 2,0 1,0 1,0 7,0 3,0 9,0 1,0 4,0 2,0 1,0 -2,0 2,0 2,0 2,0 2,0 1,0 3,0 3,0 2,0 -3,0 -7,0 -5,0 -4,0 -1,0 -1,0 -4,0 -4,0 -3,0 -1,0 -2,0 -1,0 -2,0 -2,0 -3,0 -4,0 -6,0 -8,0 -1,0 -4,0 -1,0 1,0 1,0 3,0 2,0 2,0 3,0 2,0 1,0 1,0 1,0 1,0 -1,0 -2,0 1,0 1,0 -1,0 -4,0 -2,0 -3,0 -8,0 -15,0 -6,0 -4,0 -8,0 -3,0 -2,0 -1,0 -1,0 1,0 1,0 1,0 2,0 1,0 -1,0 -3,0 -3,0 -3,0 -2,0 -5,0 -2,0 -1,0 -2,0 -9,0 -4,0 -3,0 -2,0 -5,0 -4,0 -3,0 -7,0 -2,0 -2,0 -5,0 -7,0 -6,0 -8,0 -5,0 -7,0 -2,0 -8,0 -5,0 -10,0 -3,0 -9,0 -4,0 -3,0 -2,0 -1,0 -7,0 -3,0 -2,0 -1,0 -5,0 -8,0 -10,0 -2,0 -5,0 -2,0 -6,0 -4,0 -4,0 -3,0 -3,0 -9,0 -5,0 -4,0 -2,0 -4,0 -1,0 -2,0 -3,0 -4,0 -2,0 -9,0 -1,0 -2,0 -4,0 -5,0 -2,0 -1,0 -2,0 -1,0 -3,0 -1,0 -1,0 -2,0 -3,0 -1,0 -2,0 -1,0 -1,0 2,0 -3,0 -3,0 -2,0 -1,0 -2,0 1,0 2,0 1,0 3,0 2,0 -3,0 -5,0 -5,0 -7,0 -3,0 -5,0 -4,0 -5,0 -1,0|-40,985 0,-1 -2,0 -1,0 -2,0 1,1 2,0 2,0|-50,990 -1,-1 -2,0 2,1 1,0|-88,1084 -4,-3 -2,1 -1,-1 1,3 2,1 2,3 1,0 1,0 1,-3 -1,-1 0,0|-53,1032 -2,0 -5,-1 -2,-1 -3,-2 -6,0 -4,3 -3,1 -1,0 -1,0 -2,-1 -3,0 2,2 1,0 -4,1 -1,0 -1,1 -3,0 -1,0 -2,-1 -4,-1 -4,1 -1,2 -1,1 -1,1 1,1 2,1 4,1 7,2 3,1 4,2 1,1 1,1 1,1 1,2 -1,0 -1,1 1,1 0,2 -1,1 0,2 -3,0 -2,0 -2,-1 -3,-1 -2,0 1,2 2,1 3,1 1,2 2,1 3,1 6,2 3,0 2,0 2,1 3,0 4,-2 -1,3 2,1 3,-3 1,0 2,0 -2,1 -1,0 -1,1 -2,2 0,2 1,1 1,2 -1,0 -1,0 0,2 0,1 3,1 1,2 0,2 -3,0 -1,0 -1,0 -1,0 -3,2 -2,1 -3,3 -1,2 3,4 4,3 4,1 -8,0 -2,0 -2,-1 -1,0 -2,-1 -1,0 -1,-1 -1,0 -3,0 -1,0 -1,1 -2,0 -2,-1 -2,-1 -3,1 -3,1 -2,-2 0,-1 -3,1 -2,2 0,1 0,2 1,0 1,0 2,3 3,4 2,1 0,2 0,1 -4,3 0,2 1,1 0,2 5,0 -1,0 -4,2 1,2 -1,-1 -2,-1 -3,-1 -1,-1 -1,0 -1,0 0,1 1,1 0,1 4,3 -2,-1 -4,-2 -2,-2 0,-1 1,-2 -1,-2 -3,-7 -1,-1 -3,0 0,1 1,4 1,1 3,3 -1,0 -1,5 1,2 0,2 1,2 1,1 1,2 1,1 1,1 1,2 1,1 -7,-4 -2,0 -2,0 -2,0 -2,1 0,2 -2,0 -2,0 2,1 3,1 3,1 -2,1 2,1 3,3 1,3 -2,1 -3,2 0,1 1,1 1,0 2,1 -2,0 -1,2 1,3 2,2 5,0 1,0 3,0 -5,3 1,2 0,1 2,1 4,0 1,0 -2,2 0,1 1,2 1,1 2,1 2,-1 2,-1 3,1 2,-1 5,1 7,1 4,0 4,0 4,1 4,0 -1,-3 0,-1 -1,-1 -1,-2 -4,-1 -7,-4 -5,-2 -1,-2 3,0 1,-1 -5,-2 -1,-2 3,0 3,0 4,1 5,1 2,0 4,-1 3,1 2,0 12,0 3,0 3,0 2,-2 1,-2 -1,-2 -2,-1 -1,-2 -1,-1 0,-1 -1,-1 -3,-5 -4,-2 -1,-2 -2,-2 -2,-1 -1,0 -6,-1 -1,0 -2,-1 -2,-1 2,0 2,1 4,0 5,-2 0,-1 -2,-1 -5,0 -4,-2 -1,-1 -2,0 -3,0 -4,0 -2,1 2,-1 2,-1 11,-1 4,2 5,0 9,-3 3,-2 3,-3 2,-1 2,-1 1,-1 2,-5 2,-4 2,-6 1,-1 2,-1 8,-2 2,-1 3,-2 3,-2 2,-2 3,-2 -1,0 -1,-2 1,-1 1,-2 2,-2 2,-3 -1,1 -1,0 -1,0 -2,1 -2,1 -4,-1 -2,0 -2,0 3,0 4,0 9,-5 2,-2 2,-4 -1,-1 -2,-1 -2,-2 -1,-1 5,-2 1,0 1,1 2,2 4,1 3,-1 2,0 2,0 4,-1 3,0 5,-3 1,-1 1,-2 0,-3 -1,-2 -1,-1 -1,-3 -1,-1 -3,-2 -2,-1 -1,0 0,-1 1,-1 -2,-1 -2,0 -3,0 -4,-1 3,-1 0,-3 -2,0 -2,-1 -2,0 -2,0 -2,-1 3,1 1,-1 1,-1 5,-1 2,0 5,1 2,-1 1,-1 0,-2 -7,-3 -1,-2 -5,0 -1,-1 -3,-1 -3,-1 -2,0 -2,-1 -8,1 -5,0 -7,-1 -1,0 -3,1 -3,1 -3,0 -2,1 1,-2 -3,-1 -2,0 -2,0 -3,-1 -4,0 1,-1 0,-1 -7,1 -2,-1 -2,0 -2,1 -3,1 -2,0 -2,0 -8,-1 -2,-2 -1,-2 -1,-3 -2,-1 -2,0 -2,1 -4,1 -1,1 -3,-1 -2,0 -2,0 -5,-1 -1,-1 -4,-2 -2,-2 -3,-1 -1,2 -3,0 -2,0 -1,-1 -1,2 2,1 4,1 4,2 2,2 2,1 1,1 6,5 1,2 1,2 4,1 2,3 7,1 5,0 4,-1 3,0 2,0 2,1 3,3 2,1 2,2 2,1 3,3 -2,-1 -2,-2|-84,1066 3,0 -3,-2 -2,-1 -1,0 -2,1 -2,1 0,3 2,0 3,0 2,-2|-51,1185 -2,0 1,1 1,0 3,0 -3,-1|-21,1210 -2,2 1,2 2,0 0,-1 -1,0 0,-1 0,-1 0,-1|-26,1211 0,-2 1,1 2,-2 2,1 0,-1 -2,-4 0,-2 -1,-2 -2,-2 -1,0 1,3 0,1 0,2 -2,0 -2,-1 0,2 -2,0 -1,1 1,0 2,0 3,1 -2,2 -2,1 1,1 2,1 1,0 1,0 0,-1|-16,1216 -1,-2 -1,0 -1,1 0,1 2,0 1,1 0,-1|-63,1176 -1,0 -2,0 -1,1 -1,1 3,0 1,-1 1,-1 0,0|-59,1175 -2,1 2,1 0,-2|-61,1181 1,-1 2,0 2,0 1,-1 -2,-1 -3,1 -3,-1 -1,1 -1,1 -1,-1 -1,1 1,3 1,0 2,0 2,-1 0,-1|-55,1184 -1,-1 -1,2 -2,0 -1,1 0,1 3,-1 2,-1 0,-1|-132,1132 -1,0 2,1 1,0 -2,-1|-102,1109 -3,0 -2,1 -1,2 1,2 2,0 1,0 2,-3 0,-1 0,-1|-116,1127 -8,-1 -2,0 2,1 1,3 -3,1 0,1 2,1 2,0 1,-1 2,-1 2,-1 2,0 -1,-3|-123,1119 1,-3 1,-2 -1,-1 -3,-1 -1,0 1,1 -1,2 0,1 -3,-2 0,1 0,2 2,0 1,0 2,1 1,1|-119,1116 -2,0 0,2 3,1 -1,1 0,1 3,1 1,0 -1,-2 -3,-4|-124,1167 -3,-3 -1,-1 -3,-1 2,0 1,-1 -4,-2 -2,-1 -2,-1 -1,0 -1,-2 -2,0 -2,1 3,1 2,1 -3,1 -1,1 1,1 -1,0 -1,1 0,2 1,0 2,0 1,0 2,0 1,0 -1,2 5,2 5,2 1,0 1,-1 0,-2|-126,1139 -1,0 -2,1 3,1 1,-1 -1,-1|-123,1150 0,-2 0,-1 1,-1 4,-1 4,0 0,-1 -2,-1 -2,-2 -2,0 -1,3 -2,0 -2,0 -1,0 -3,3 -5,0 -1,1 1,2 1,0 1,0 0,1 4,1 1,1 1,0 1,0 2,-1 0,-2|-144,1154 2,-1 -2,-2 -2,0 -4,1 1,1 1,0 2,0 1,0 1,1|-145,1142 -2,0 -1,2 0,2 0,2 2,0 1,-5 0,-1|-148,1139 -2,0 0,1 1,0 1,0 0,-1|-144,1102 2,-1 1,1 2,2 1,0 2,0 2,0 5,1 2,0 2,-1 2,0 2,-1 1,-2 3,-3 3,-2 0,-1 -1,-1 -3,0 2,-1 1,0 3,0 1,-1 1,-1 1,-1 -1,-1 -1,1 -2,1 0,-1 0,-2 2,-1 -1,-2 -2,0 -3,0 -1,-2 -1,-1 -1,-1 -2,0 -2,1 1,-2 -2,0 -1,0 -1,-1 1,-1 1,-1 0,-2 1,-2 1,-1 0,-2 0,-2 0,-2 2,-3 0,-1 0,-3 0,-2 -2,-1 0,-1 -1,-2 0,-2 -3,-3 -1,-1 -1,0 3,-2 -3,-1 -2,0 -3,0 -2,0 -1,0 -1,-1 -1,2 -1,-2 -2,0 -2,0 -5,-1 -2,0 -1,-2 -1,0 -4,-1 -2,-2 -2,0 -2,-1 -1,1 -2,1 -2,0 1,-1 0,-1 0,-1 -1,-1 -2,0 -2,-1 -3,0 -1,-1 -10,-2 -2,0 -1,1 -2,-1 -4,-1 -2,1 3,2 3,1 -7,0 -2,-1 -2,0 1,1 2,2 2,0 1,1 1,0 3,1 -10,-2 -2,1 -3,0 -1,1 3,2 2,1 2,1 2,1 0,1 -6,0 -3,0 1,1 3,1 1,1 2,0 1,-1 1,0 4,0 -2,1 0,2 -1,0 1,1 2,0 2,2 6,1 6,0 5,2 -2,0 -2,1 -2,-2 -1,0 -5,-1 -1,1 -2,0 -1,-1 -3,0 -3,-1 3,2 5,3 1,0 1,2 -1,1 3,3 1,0 2,1 2,0 1,0 1,1 -2,1 -2,0 -6,0 -2,0 -1,1 -2,1 -1,-1 -2,0 -1,1 2,1 -2,0 -2,0 -2,0 1,2 -1,0 1,1 1,0 2,1 4,0 -3,1 -1,0 0,2 3,1 3,0 0,2 -3,0 -3,-1 0,2 1,1 0,2 -2,0 0,1 -3,0 0,1 2,2 1,-1 2,0 3,1 3,0 5,0 3,-2 2,2 6,-1 3,0 1,1 -1,1 1,1 2,1 1,0 2,1 1,0 1,2 1,1 -6,-1 -6,2 1,1 1,0 2,1 2,1 1,1 0,1 0,1 1,1 1,1 3,1 3,1 4,0 1,0 0,1 2,0 1,-1 1,-2 -2,-1 0,-2 1,1 2,1 0,2 0,2 1,1 3,0 -1,1 1,0 1,0 2,-1 2,-1 2,0 -2,-1 -2,-1 -1,-1|-21,1014 -2,-1 -1,-1 -1,0 -1,0 -4,1 -1,0 3,2 2,0 3,0 2,-1|640,924 3,-1 -3,0 -6,1 -3,1 -1,2 2,-1 1,-1 7,-1|519,803 -4,-1 -2,1 2,1 3,1 2,-1 -1,-1|226,695 -4,-1 1,1 2,1 1,-1|381,1157 -1,-1 -1,-1 -1,0 -2,-1 0,-4 2,-2 -1,0 -1,-1 -2,-2 -3,-1 -1,-1 -2,-1 -1,-2 -2,-1 -2,-1 1,2 2,2 -2,1 -1,1 -1,1 1,2 0,2 0,2 1,1 2,1 2,2 3,2 3,0 2,0 1,1 1,0 1,0 2,-1|331,1126 -1,-1 -2,1 0,4 0,1 5,7 2,0 2,4 1,1 1,2 1,1 2,1 -1,-1 0,-1 -3,-5 -1,-3 -1,-1 -5,-10|383,1158 0,-1 -1,0 1,3 3,0 1,-1 -4,-1|368,1181 -1,-1 1,2 1,0 -1,-1|372,1189 -1,1 1,1 2,0 -2,-1 0,-1|32,773 -2,0 -2,0 0,2 2,-1 2,0 0,-1|63,796 2,-1 2,1 1,0 1,-1 0,-1 -1,-1 -1,-2 -1,-1 -1,-2 -2,-1 -2,-1 -3,1 -2,1 -1,2 -2,1 -1,0 -2,-1 -1,1 -1,0 -1,1 9,5 2,1 5,1 0,-1 0,-1 0,-1|86,797 -7,2 -2,0 0,2 4,0 3,0 2,-3 0,-1|29,778 -1,-1 -3,1 0,1 1,2 1,1 4,0 1,0 -2,-3 -1,-1|716,1304 1,-2 0,-2 -1,0 -2,1 -2,0 -1,1 0,1 1,0 3,1 1,0|99,1222 -2,-1 -1,1 1,2 1,0 1,-1 0,-1|102,1206 0,-2 -2,0 -1,1 0,2 0,1 1,1 1,-1 1,-2|599,1396 -4,-1 1,2 1,1 1,0 2,-1 1,0 -2,-1|239,1313 -1,-1 -2,0 0,2 1,0 2,0 0,-1|169,1273 -2,0 -1,1 3,1 5,0 1,1 1,-1 -7,-2|162,1267 -2,0 -2,0 -2,1 3,1 2,0 2,0 0,-2 -1,0|469,1416 -1,-1 -2,-1 -5,-2 -2,-1 -2,0 -4,0 -1,0 -1,-1 -2,0 -2,0 -4,1 -2,1 -1,1 3,0 2,0 2,0 1,1 3,0 6,1 2,-1 5,2 2,0 2,1 1,-1|512,1423 5,-1 2,0 3,-1 1,0 -3,-1 -4,-1 -4,0 -2,1 -4,1 2,1 4,1|472,1411 1,-2 -2,-1 -4,-1 -2,-1 -2,0 -1,0 0,1 -2,0 -2,1 1,1 1,1 3,0 2,0 6,2 1,-1|480,1411 -3,0 -3,0 -1,3 3,1 1,0 2,-1 3,-1 -2,-2|277,1365 2,0 3,0 -1,-1 -3,-1 -2,-1 -3,0 -1,0 -2,-1 -2,1 0,-2 -3,0 -1,2 1,0 2,1 2,0 2,2 3,0 2,1 1,-1|259,1357 -2,-1 1,2 1,2 2,1 1,0 0,-2 -3,-2|304,1379 3,-2 1,-1 -1,-3 -3,-1 -3,0 -3,0 -2,1 -1,1 -3,-1 -2,0 -2,0 2,2 1,1 3,0 2,0 1,1 0,1 4,0 0,2 1,0 2,0 0,-1|395,1404 1,0 1,0 3,-1 2,0 -2,-1 -2,-1 -2,1 -2,1 -2,1 2,1 1,-1|416,1402 -2,-1 -1,0 -2,1 -2,0 -1,0 2,2 3,1 3,-1 0,-2|385,1401 2,-1 1,0 2,1 2,-1 -3,-2 -2,-2 -3,0 -1,0 -3,-1 -2,-1 -2,-1 0,-1 -8,-1 -2,0 -3,0 -2,1 4,1 0,1 2,1 1,1 2,-1 2,1 2,0 0,1 2,2 2,1 1,1 2,0 0,2 2,2 1,0 1,-1 0,-3|250,1318 -1,0 1,2 1,0 2,0 2,0 -5,-2|248,1321 -1,0 1,1 1,2 2,0 1,0 0,-2 0,-1 -4,0|225,1297 -1,0 -3,0 -4,0 -2,0 1,1 4,2 3,0 2,-2 0,-1|350,1392 2,-1 2,0 2,0 1,0 2,-1 1,0 2,-2 -2,-1 -1,0 -1,-2 1,-1 -3,-1 -5,0 -1,1 -3,-1 -4,-2 -1,-1 -3,1 -3,0 3,2 1,1 -1,2 1,1 2,1 5,0 0,1 -2,1 2,1 2,0 1,1 0,0|315,1371 3,2 3,1 2,1 -1,1 3,1 2,1 2,-1 1,-1 1,-2 -1,-1 -3,-2 -3,0 -3,-2 -1,-1 -2,0 -1,0 -2,0 -1,-1 -5,-1 -2,0 0,2 -1,-1 -2,-1 -2,0 -1,0 -2,0 -6,-2 -6,0 -2,0 0,1 4,2 3,1 10,1 6,3 2,4 1,1 -2,1 0,2 1,1 3,2 2,0 3,3 1,0 2,0 2,-1 -1,-1 -2,-2 -4,-2 1,-1 1,-1 0,-2 1,-1 -3,-3 -1,-1|-179,1417 -2,0 -1,0 3,1 9,3 3,2 7,1 0,-2 0,-1 -6,-1 -7,-1 -6,-2|127,1070 -3,0 2,0 1,0|119,1069 -4,0 -2,0 5,0 1,0 0,0|102,1066 -4,-1 3,1 1,0|107,1068 -2,0 3,1 3,0 -4,-1|98,1061 -2,-1 -1,0 0,2 3,2 0,-3|79,1035 2,-1 -2,-1 -3,1 -1,0 -1,1 2,0 3,0|135,1072 -2,0 2,1 0,-1|291,717 -2,-1 -2,1 0,3 2,-1 2,-1 0,-1|286,721 -1,-1 -1,1 1,1 1,-1 0,0|208,857 1,-1 -1,-2 -1,1 -3,0 -1,0 0,1 2,0 2,0 1,1|279,814 -2,0 0,1 2,0 0,-1|241,735 -2,1 0,1 2,-1 0,-1|312,764 -2,-2 -5,-6 -1,-2 0,-1 -1,-1 0,-1 -1,-2 0,-1 1,-2 2,-1 -2,-1 2,-1 1,-1 0,-2 -2,-1 -2,-2 0,-1 0,-2 -2,0 -2,0 -2,0 -4,1 -1,1 -1,0 -3,3 -2,2 -2,1 -3,0 -2,0 -2,1 -4,2 -5,2 -2,1 -2,2 -2,0 -3,1 -1,0 -2,0 -1,0 -1,1 -2,1 -2,2 1,4 1,2 1,1 1,0 2,2 2,-3 1,0 1,0 2,1 2,2 3,0 1,0 1,-1 1,-1 1,0 4,-2 1,0 1,0 3,0 2,1 5,-1 2,1 2,0 3,1 2,1 1,0 1,0 3,0 2,0 2,0 2,2 1,-1 3,2 1,0 2,-1 -1,-1|193,818 1,-2 2,-5 0,-1 0,-1 -3,-4 0,-2 1,-1 0,-2 0,-2 -2,-11 0,-2 -1,-2 -1,0 -2,0 -3,1 -1,0 -1,0 -2,1 -1,-4 -1,-2 -1,-1 -2,0 -2,1 -1,0 -1,0 -1,2 -1,1 -2,2 0,2 0,4 1,1 0,2 0,1 1,0 1,3 -1,1 -2,0 0,2 0,1 1,2 0,3 -1,1 0,2 -1,1 -1,1 -1,1 -1,3 0,2 2,0 1,0 2,0 2,0 3,1 2,1 4,3 2,1 1,1 1,1 2,-1 1,0 2,-1 2,-2 1,-1 -1,-1 2,-1|170,781 -2,-2 -1,2 0,1 2,0 1,-1|166,821 -2,-1 1,2 1,0 0,-1 0,0|-199,1078 -2,0 -4,2 1,0 4,0 1,-2|557,731 -1,1 1,1 0,-1 0,-1|412,768 1,-3 1,0 2,-2 0,-1 -4,0 -2,0 0,1 -1,1 -1,0 0,3 2,-1 1,2 0,1 1,-1|418,756 2,-2 -2,1 -2,-2 -2,2 -1,1 1,3 1,-2 2,0 1,-1|414,772 -2,0 -1,0 0,1 1,2 1,1 1,1 0,-4 0,-1|415,767 -1,-1 -1,2 -1,2 1,0 1,-1 1,-2 0,0|402,789 0,-1 -3,0 -1,1 -2,3 -3,3 1,1 3,0 1,0 1,-1 -2,-1 1,-2 1,-2 2,-1 1,0|468,779 1,-2 1,-1 3,-1 1,0 4,-1 4,-1 1,-1 1,-2 0,-3 2,-3 1,-1 2,0 2,0 1,-3 -2,-1 -1,1 -2,0 -3,2 0,2 -2,2 -1,1 -3,1 -3,0 -2,1 -1,2 -1,1 -2,1 -2,2 -2,1 -2,1 -2,0 -2,0 -1,0 2,1 3,2 2,1 1,0 2,-2|476,782 -3,0 -1,2 4,-2|478,783 0,2 1,0 0,-1 -1,-1|494,776 -3,0 -2,2 0,1 2,0 1,-1 2,-2|495,812 -2,0 -3,1 2,2 2,1 1,-1 0,-2 0,-1|471,759 -2,-1 0,2 1,0 1,-1|461,724 -2,0 -1,2 1,2 1,-1 2,-2 -1,-1|543,709 0,-1 -1,2 -1,2 2,3 0,1 1,0 0,-2 -1,-1 1,-2 1,-1 -2,-1|540,739 -2,0 1,1 -1,2 1,-1 1,-1 0,-1|539,735 2,2 3,1 1,0 2,-1 -3,-1 -3,-1 -2,0|511,739 -2,0 -1,1 -1,1 4,3 1,-1 0,-2 -1,-2|506,741 -2,-1 -1,0 0,2 2,1 0,-1 1,-1|510,728 -1,-1 -2,0 1,2 1,0 1,-1|508,733 -2,1 0,2 2,-2 0,-1|537,756 2,0 2,-1 0,-1 -1,0 -3,-1 -1,0 -2,1 -2,0 1,2 2,0 2,0|521,751 1,2 2,0 3,0 -1,-1 -2,-1 -3,0|517,736 -2,0 2,0 2,2 1,1 1,-1 -1,0 -3,-2|529,732 -1,-1 -1,-1 -2,1 2,1 0,1 1,-1 1,0|487,752 -1,-1 0,1 0,2 2,0 -1,-2|489,747 -1,-1 0,2 0,1 1,0 0,-2|491,735 0,-1 -4,-1 0,1 1,0 3,1|499,750 0,-2 -1,1 0,1 1,0|500,755 -1,-1 -1,1 -2,1 -2,2 0,1 1,1 2,-2 2,0 1,-2 0,-1|505,752 -1,-1 -1,0 -2,1 -1,2 2,-1 2,0 1,-1|494,738 -1,2 2,-1 -1,-1|522,764 -2,-1 -2,2 1,1 1,1 -1,1 -2,2 0,1 3,1 2,-1 1,0 0,-1 0,-4 -1,-1 0,-1|528,787 0,-2 3,-2 1,-1 0,-1 -1,0 0,-1 -2,-1 -1,0 -5,2 -1,1 3,1 -1,1 -3,-2 -3,1 -1,1 1,2 3,0 1,0 1,1 4,1 1,-1|514,809 -3,-1 -2,2 2,0 1,0 2,-1|509,800 -2,-2 0,-2 -1,0 -1,2 -1,-1 -1,0 -2,0 0,1 0,2 4,0 1,-1 1,1 2,1 0,-1|508,748 -2,0 0,2 3,-1 -1,-1|491,743 -3,0 1,1 2,0 0,-1|557,719 -2,-1 -1,1 1,2 -1,2 2,1 0,2 2,1 5,2 2,0 0,-2 -2,-3 -2,-1 1,-2 -3,0 -2,-2|477,711 1,0 2,0 2,1 1,0 1,-1 -1,-1 1,-1 1,0 0,-1 2,-1 2,0 2,1 2,0 1,1 6,-1 2,-1 4,0 4,-1 1,1 4,0 0,-3 1,-2 2,2 3,0 2,0 3,2 0,-3 -1,-1 0,-1 -2,-1 -2,0 -4,0 -5,0 -8,-1 -8,0 -1,0 0,1 -1,2 -2,0 -3,1 -9,1 -2,1 -4,0 -1,0 -2,1 0,2 0,3 2,0 1,0 0,1 1,1 1,-2 1,0|274,1088 1,-2 -3,1 -2,0 -2,-2 -1,0 -3,2 -1,1 1,2 1,2 0,1 2,1 1,0 2,-2 3,0 -1,-2 0,-2 2,0|226,1088 -3,0 -2,1 -1,0 1,1 4,0 1,-1 0,-1|166,1096 0,2 2,3 0,-1 -1,-1 6,-1 -6,-1 -1,-1|172,1094 -3,0 -1,0 1,1 2,0 1,-1|190,856 -1,-3 1,-1 1,-9 -2,-4 -1,-4 -1,-1 0,-1 -2,-4 -1,-1 -4,2 -2,0 -1,1 0,2 1,0 -3,2 -1,0 1,2 0,2 -2,-1 -1,1 1,1 1,1 0,1 -1,0 -1,1 -1,1 2,2 0,1 -2,0 2,2 1,2 2,1 4,1 1,0 2,2 1,0 1,-1 1,0 1,1 0,4 0,1 1,0 1,-1 1,-2 0,-1|-24,918 0,-2 -2,2 -1,1 -1,2 2,-1 2,-2|400,1207 2,0 1,-1 2,0 -1,-2 -1,0 -2,0 0,-2 -5,0 -1,0 -2,3 2,1 1,-2 1,0 0,2 -1,1 0,1 2,0 1,-1 1,0|393,1204 -1,-1 -1,0 0,2 2,0 0,-1|412,1201 -2,-1 -2,1 2,1 1,-1 1,0|440,1207 -2,0 -2,1 0,1 2,0 2,-2 0,0|424,1265 2,0 1,0 1,0 -1,-1 -1,0 -1,-1 -2,1 -1,2 3,0 -1,-1|443,1207 3,0 1,0 1,-1 -2,-1 1,-1 -2,-1 -1,2 -2,1 1,1 0,0|429,1211 -2,-1 -1,0 -1,1 -1,1 1,1 4,-2|437,1203 -2,-1 -1,1 1,1 2,0 0,-1|433,1202 -2,0 -1,1 1,0 2,0 0,-1|497,1300 -3,-1 -2,1 0,1 1,0 3,1 3,-1 -1,0 -1,-1|452,1172 2,0 1,0 1,0 3,0 7,-2 -3,-1 -2,-2 -1,0 -2,-1 -3,-1 -5,0 -3,-1 -2,-1 0,-2 -2,-2 -1,0 -2,0 0,1 3,2 -1,1 -1,1 -3,1 1,1 1,2 -3,2 2,0 1,0 2,0 1,0 2,0 2,2 2,0 2,1 1,-1|458,1177 -1,-1 -2,0 -2,-2 -2,0 -2,0 -1,3 -2,1 -3,0 -2,1 8,0 1,2 2,1 1,0 1,0 1,-2 3,0 2,-2 0,-1 -2,0|467,1171 -2,0 -4,1 2,2 4,-1 0,-1 0,-1|-132,1236 -3,0 -2,1 -1,1 2,0 3,-1 1,-1|-134,1229 -1,0 -3,2 -1,1 4,0 1,-2 0,-1|-144,1243 2,-1 0,-1 -2,0 -1,0 -3,0 0,2 1,0 2,0 1,0|-133,1245 0,-3 -2,1 -1,0 0,-1 2,-2 -2,0 -4,2 -3,4 4,0 3,-1 3,0|-128,1245 -1,-1 -2,0 0,2 0,1 2,-1 1,-1|251,1116 0,-2 -1,-1 -2,-1 -2,0 -1,-1 -1,-2 1,-1 3,0 0,-2 -2,-1 -4,-1 -1,-3 0,-1 0,-2 0,-2 -4,-1 -2,3 0,1 -1,2 0,1 -1,2 -3,0 -2,0 -2,0 -3,3 1,2 -1,2 -1,1 -1,1 -1,0 0,1 1,1 3,0 2,0 3,3 1,1 3,0 1,-1 0,-1 0,-2 2,-1 1,1 1,2 1,1 -2,1 4,2 3,1 2,0 3,0 2,0 1,-1 -1,-2 0,-3|213,1112 1,-1 1,-2 1,-3 0,-1 0,-1 0,-1 -3,-2 -4,0 -4,1 -5,1 -1,2 -2,2 0,3 3,1 6,1 1,0 1,-1 2,0 2,1 1,0|227,1098 4,-1 2,0 2,-1 0,-2 -1,-1 -2,0 -3,0 -8,2 0,3 4,1 2,-1|215,1095 -2,2 1,1 1,1 2,2 1,2 0,-2 -3,-5 0,-1|251,1099 -4,0 -3,-1 -2,0 1,1 1,1 1,1 3,0 1,-1 2,-1|253,1112 -2,-1 -1,1 1,1 1,1 1,-2|210,1097 -2,0 -1,0 -3,2 1,0 2,-1 1,0 2,-1 0,0|201,1098 -2,-1 -1,1 -2,0 -1,3 2,0 3,-1 1,-2 0,0|212,1116 -1,0 -1,1 1,1 -1,1 3,-1 0,-1 -1,-1|221,1145 -4,0 2,1 3,1 1,-1 -1,0 -1,-1|302,1100 -4,1 -4,1 0,3 1,1 8,-3 0,-1 -1,-2|654,703 1,0 3,1 1,2 0,2 3,-1 4,0 3,0 3,0 9,2 3,2 1,0 3,2 3,0 -2,-1 -10,-6 -1,-2 1,-1 1,-2 1,-1 -2,-1 -3,0 -1,0 -1,0 -4,-3 -2,-1 -2,-1 -2,0 -2,0 -1,0 -1,-2 -1,0 -1,1 -3,0 -1,0 -4,1 -1,1 -3,4 0,3 2,-1 1,1 2,1 2,1 1,-1|333,860 4,-1 2,1 3,-1 1,0 -1,-1 -2,1 -3,-1 -2,0 -2,1 0,1|344,863 -2,-1 -8,0 -3,1 -3,1 2,1 3,-1 8,-1 3,0|336,865 -3,0 -3,1 -2,0 1,2 3,0 5,-1 1,-1 -2,-1|305,881 -3,1 -1,1 4,-2|296,900 -2,-1 -1,1 -3,1 -1,1 1,1 1,2 2,-1 1,-2 2,-2|297,895 -2,0 -1,0 -1,1 2,1 2,-2|304,887 -2,0 -1,1 -3,2 0,1 -3,2 2,-1 3,-1 2,-2 3,-2 -1,0|304,878 -1,0 -5,5 1,-1 5,-4|307,879 2,-1 -2,0 -1,1 1,0|290,893 -2,0 0,2 -2,3 1,2 -1,3 1,0 0,-1 1,-1 1,-2 0,-2 0,-2 1,-2|352,855 3,-1 -8,2 2,0 3,-1";
+const EU_BORD="249,838 0,0|-124,1082 -2,0 -1,0 -2,-1 -2,0 -2,0 0,2 -2,1 -2,1 -1,2 -1,0 -1,1 -3,-1 -1,-1 1,-1 -3,-2 -1,-1 -1,1 -3,0 -1,0 -2,1 -3,0 -1,2 -4,2 0,2 1,0 5,1 0,2 -2,0 1,1 1,0 1,0 3,1 1,0 1,2 1,1 1,2 4,2|700,915 -1,0 -3,1 0,2 -2,2 -4,0 -1,-1 -2,2 -3,1 -1,0 -2,0 -5,2 -3,0 0,-1 -1,-1|594,905 -1,1 -2,1 -3,1 -4,0 -3,-2 -3,0 -2,0 -1,0 0,-1 -6,1 -3,1 -2,2 1,1 4,0 1,1 0,2 1,2 2,1 2,1 0,2 2,1 2,1 0,2 0,3 0,1 0,1 2,2 2,1 1,-1 0,-2 1,0 1,1 2,0 1,0 2,-1 1,0 1,0 2,1 2,-2 5,1 1,0 -4,3 0,1 0,2 -1,2 -4,2 -2,1 -1,1 0,1 -1,2 1,1 0,1 -2,1 -1,1 -4,2 -1,1 0,2 1,1 0,2 0,3 -1,1 -2,0 -2,0 -1,0 -1,1 -2,2 -3,1 -1,0 -2,-1 -1,1 -1,0 0,1 -1,1 -3,0 -1,0 -1,1 -2,1 -1,0 -2,1 -2,1 -3,0 -2,0 -1,-1 -1,1 -2,-2 -5,0 -2,0 -1,1 -4,-2 -2,-1 -2,0 -3,-1 0,-2 -1,-1 -2,-1 -5,-1 -4,0 -5,-1 -6,-2 -2,-1 -1,-1 -2,0 -1,1 -4,3 -1,1 -2,0 -2,0 -2,-1 -2,0 -3,1 -1,0 -6,1 -1,0 -5,0 -4,2 -1,0 -2,-2 -3,-1 -1,0 0,2 -1,1 -2,0 -2,1 -2,1 -2,1 -1,0 -1,2 -1,1 -2,0 0,3 3,3 1,1 1,2 1,2 1,1 1,1 3,0 2,-1 1,2 -2,1 -1,0 0,2 1,1 -1,1 -1,3 0,1 1,1 4,3 1,2 2,1 4,3 3,2 2,2 3,2 1,1 5,0 2,2 1,2 -1,2 -1,2 1,0 1,1 -2,2 -1,1 -2,3 -3,2 -1,2 0,2 -1,1 0,2 2,1 2,0 1,-1 2,0 4,1 3,3 0,1 4,1 2,0 2,0 3,0 3,0 1,1 4,0 7,-1 4,0 3,0 6,-1 3,0 1,-1 2,0 4,-1 4,0 2,0 2,0 2,-3 2,0 2,0 3,0 2,-1 0,-1 1,0 1,1 1,1 3,-1 2,0 1,1 3,0 2,-1 3,0 1,0 1,-2 2,0 1,1 1,1 2,0 1,0 1,2 2,-1 2,-2 1,-2 3,0 2,1 3,0 4,0 3,1 2,0 1,-1 2,-1 1,-1 2,-2 2,0 1,1 1,1 -1,1 0,1 -1,2 0,1 1,2 1,1 2,3 2,1 3,2 2,1 1,-1 1,0 3,1 4,0 4,0 3,-1 1,0 2,0 1,0 2,1 2,0 1,3 2,1 1,0 3,0 3,-1 2,0 5,2 3,0 3,0 3,0 3,0 1,-1 2,-1 2,-2 2,-3 6,-4 0,-2 -3,0 -3,0 1,-2 1,-1 0,-1 0,-2 1,-1 1,-1 -1,0 5,-1 2,-1 2,-1 3,1 3,0 1,0 1,-2 1,-1 2,0 2,-1 -1,-1 2,-3 1,-1 -1,-2 0,-2 2,-2 1,0 1,-2 1,0 3,1 2,1 2,-1 2,0 2,-1 1,-1 1,0 1,0 3,0 1,-1 1,-1 2,1 1,1 5,1 3,0 2,1 2,0 1,0 2,-1 2,-1 0,-2 2,-2 5,-3 1,-1 0,3 0,-2 0,-1 0,-2 0,-1 0,-2 0,-2 0,-1 0,-1 0,-2 0,-1 0,-1 0,-1 0,-1 0,-2 0,-1 0,-2 0,-1 0,-1 0,-1 0,-2 0,-1 0,-2 0,-2 0,-1 0,-1 0,-1 0,-2 0,-2 0,-2 0,-1 0,-1 0,-3 0,-2 0,-1 0,-1 0,-2 0,-1 0,-1 0,-1 0,-2 0,-1|760,830 0,-1 0,1 0,-1 0,2 0,-1 0,-3 0,-1 0,-1 0,-1 0,-1 0,-2 0,-1 0,-1 0,-3 0,-2 0,-1 0,-2 0,-1 0,-2 0,-3 0,-2 0,-2 0,-1 0,-2 0,-3 0,-1 0,1 0,-2 0,-5 0,-1 0,-2 0,-1 0,-2 0,-1 0,-1 0,-1 0,-2 0,-3 0,-1 0,-2 0,-3 0,-1 0,-1 0,-1 0,-2 0,-2 0,-2 0,-1 0,-1 0,-2 0,-2 0,-2 0,-1 0,-1 0,-2 0,-1 0,-2 0,-1 0,-2 0,-1 0,1 0,3 0,2 0,-2 0,2 0,1 0,-2 0,-2 0,2 0,1 0,-2 0,-1 0,-1 0,-2 0,-3 0,-2 0,-1 0,2 0,1 -2,-1 -2,-1 -2,0 -4,-1 -1,-1 -2,0 -3,0 -3,0 -1,1 -1,1 -3,1 -3,0 -1,-2 -1,-4 0,-1 2,-4 -2,-1 -1,0 -2,0 -1,-4 -2,-1 -1,0 -1,-2 -4,1 -1,0|521,815 1,0 2,2 1,1 2,1 0,2 0,1 0,3 4,2 1,0 0,3 0,2 -2,1 -2,1 -2,0 1,1 3,2 1,1 1,1 2,0 2,1 2,0 1,1 5,1 1,0 1,0 1,-1 2,-2 2,-1 2,1 2,0 1,0 2,1 2,-1|230,664 -1,-5 0,-1 0,-2 0,-3 2,-3 0,-1 -1,-1 -3,-1 -4,-2 -3,-2 -3,-1 -2,-2 -1,0 -2,0 -1,0 -2,0 -3,0 -2,0 -2,0 1,0 2,0 -2,0 -2,0 -2,0 -3,0 -3,0 -3,0 -1,0 -1,0 -2,0 -1,0 -2,0 -1,0 -1,1 -4,3 -3,2 -4,2 -3,3 -1,3 -2,5 -2,2 -4,2 -3,2 -1,2 -1,4 -2,3 -1,3 0,3 0,2 5,3 2,3 2,1 2,1 1,1 2,2 1,2 0,2 1,3 0,2 2,2 -1,2 -1,2 1,4 -1,1 0,1 -1,2 0,1 1,4 0,3 1,3 0,1 -3,2 1,1 2,2 2,2 1,1 2,1 0,1 0,1|760,742 0,-3 0,-2 0,-2 0,-3 0,-2 0,-1 0,-1 0,-3 0,-1 0,-3 0,-2 0,-3 0,-2 0,-1 0,-2 0,-2 0,-3 0,-5 0,-5 0,-4 0,-3 0,-2 0,-3 0,-3 0,-3 0,-3 0,-3 0,-2 0,-3 0,-2 0,-3 0,-2 -5,-3 -3,-2 -6,-3 -4,-3 -6,-3 -6,1 -3,1 -1,1 -2,1 -3,1 -2,2 -1,1 -2,1 1,2 1,2 -1,2 0,1 1,2 -1,1 0,2 0,2 2,1 1,1 -1,1 0,3 1,1 2,1 1,0 1,0 2,0 1,0 -1,1 0,1 1,1 1,1 3,2 1,1 -2,5 -1,0 -1,1 -1,0 1,1 0,2 -2,1 -3,-1 -3,0|296,1017 -2,-1 -1,1 0,1 -2,1 -1,1 -3,1 -1,0 -1,-1 3,-2 -4,-1 -2,-1 -2,0 -2,-1 -4,-1 -3,0 -2,-2 -1,0 -1,0 -2,0 -1,-2 -4,0 -1,-2 -2,0 -2,1 -1,-1 -1,0 -2,0 -2,-1 -2,-2 -1,-1 -1,1 -2,1 -1,0 1,-2 1,-1 0,-1 2,-1 2,-1 1,-1 1,-1 -1,-1 -1,-2 1,-1 2,-2 2,-3 1,-1 1,-1 1,0 2,0 2,-2 3,-2 2,-1 1,0 1,-1 1,-1 1,-1 2,0 3,-1 1,-2 1,-1 0,-1 0,-2 -1,-1 -2,-1 -3,2 -2,-4 -2,-1 -2,-1 -1,0 -1,0 -4,-2 -2,-1 -1,-1 2,-2 2,-2 0,-2 -1,-1 2,-1 1,-1 0,-1 0,-2 -2,0 -1,0 -2,1 0,1 -2,1 -2,0 -1,0 -2,0 -2,1 -2,0 -1,0 0,-1 -10,-1 -3,-1 -2,-1 -1,0 -2,-2 -2,0 -1,0 -2,0 -1,0 -2,1 -1,1 -2,0 -2,1 -3,0 -1,0 -1,-3 -1,-1 -1,-1 -1,0 -1,0 0,1 -2,1 -1,1 -2,1 -2,1 -2,1 -2,-1 -2,0 1,-2 0,-1 -1,-3 -1,-2 0,-1 2,-1 3,0 2,-1 1,-1 2,-1 3,-1 4,3 1,-1 1,-1 -1,-3 0,-2 1,-1 -2,-1 -2,0 -1,1 -1,0 -1,0 -1,-1 0,-1 1,-2 0,-1 1,-1 -1,-1 -3,2 -1,0 -2,0 -3,-1 -1,0 -1,0 -2,3 0,1 -3,0 -1,-2 0,-2 -1,-2 -3,-2 -1,-1 0,-1 0,-1 1,-1 -2,-1 -1,0 0,1 -2,2 1,1 -4,1 -2,1 -2,2 0,3 -2,1 -1,-1 -1,-1 -3,-2 1,-1 -3,-3 -3,-2 -1,-1 -4,1 -1,1 -2,-1 -2,-1 -4,0 -2,0 -1,1 -1,1 -1,1 -2,2 0,3 -1,1 -3,2 -3,0 -3,-1 -1,-1 0,-2 -1,-1 -2,-1 -2,0 -1,1 2,1 1,1 0,1 -1,2 1,1 1,1 3,3 2,1 1,2 0,2 4,1 1,1 2,2 3,2 1,1 -2,1 1,2 2,1 2,0 1,-1 1,0 2,0 1,0 1,1 3,2 2,-1 5,0 3,1 2,0 3,0 1,0 2,0 1,0 -2,1 0,2 1,0 1,1 4,-2 1,0 1,-1 6,0 1,0 3,-1 3,-2|228,1181 1,-3 2,0 2,1 1,1 1,3 1,3 -1,3 -1,2 3,3 1,2 1,1 1,1 1,0 2,0 3,1 2,2 2,1 0,3 0,1 2,3 -1,2 -2,3 -3,4 0,2 1,0 2,1 5,0 1,1 0,1 2,1 0,2 1,1 -3,2 -3,2 -2,0 -4,2 -3,1 2,6 1,3 0,3 -4,6 0,1 1,1 -1,3 0,1 2,2 -1,2 -3,4 4,4 -1,2 3,1 5,4 2,2 3,1 4,1 4,0 2,0 7,0 6,-1 2,2 2,1 0,2 -1,3 0,1 -5,1 -4,2 5,4 4,3 5,4 2,2 1,1 1,7 1,2 1,1 0,1 -1,2 -1,4 7,0 3,0 2,1 4,1 3,1 -2,4 3,1 7,4 7,5 3,1 1,2 -2,2 -1,1 -3,3 1,1 2,0 3,1 2,1 5,6 7,3 4,1 4,-1 7,-2 3,3 1,1 2,1 -1,2 0,3 0,2 3,0 2,0 7,-1 2,0 4,0 4,-1 9,-1 3,-1 2,0 2,1 4,2 -6,1 4,1 2,1 1,2 1,2 0,1 -1,1 -4,1 8,1 2,0 6,-1 0,-2 6,-1 1,-1 3,-2 4,-1 2,-1 3,-1 3,-1 4,0 3,-1 9,-1 1,-1 2,-1 3,-1 2,-2 2,0 3,-3 4,-1 -3,-2 0,-1 0,-2 1,-2 -1,-1 -1,-1 2,-1 2,0 2,-1 1,-1 -3,-2 -1,-1 1,-1 1,-2 1,-1 2,-1 2,-1 1,-2 -1,0 -1,-2 0,-1 -1,-1 -2,-2 -1,0 -1,-2 1,-2 0,-1 1,-1 3,-1 2,-2 1,-1 2,-4|-36,868 1,-2 2,0 2,0 2,-1 1,0 0,-2 -2,-2 1,0 2,0 1,1 2,-2 5,-1 2,0 2,0 3,-3 2,0 2,0 1,1 2,-1 1,0 1,-1 1,-1 6,0 1,0 1,0 2,0 2,0 3,0 0,2 2,1 5,-1 2,-1 2,-1 2,0 1,0 2,-2 -1,-1 1,-2 1,0 1,0 1,0 2,1 3,-1 2,0 1,-2 2,1 2,0 3,0 4,-1 2,0 0,1 2,0 1,1 2,0 1,0 2,0 2,0 1,0|-148,744 -1,5 -1,1 0,2 1,3 1,1 2,2 2,2 3,1 1,0 0,1 1,2 -3,0 -5,5 1,2 0,2 0,1 2,1 1,2 2,1 1,2 0,1 -1,1 -2,1 -3,4 -1,2 -2,2 -2,2 2,1 7,0 1,0 1,2 2,3 0,1 -3,3 1,1 1,1 2,1 1,1 -1,1 0,2 0,2 0,4 0,2 -2,2 1,1 2,1 2,2 3,2 3,1 2,2 1,1 0,2 -1,1 -2,0 -2,0 -1,0 0,3 0,1 -1,2 -2,0 -2,0 -1,0 -4,0 -1,0 -1,1 -1,-1 -1,-2 -3,0 -2,0 -2,0 -2,1 -4,-1 -2,0 -2,-1 -1,0 -1,2 1,2 0,1 -1,2 -1,0 -1,-1 -5,-1 -1,0 -2,-1 -2,-1|443,968 -8,-1 -2,1 -1,1 -2,1 -1,1 -1,0 -4,-1 -3,0 -1,0 -3,1 -4,0 -3,0 -3,-5 -4,-2 -4,-1 -1,0 -2,0 -2,1 -1,0 -2,0 -1,-1 -1,-1 -4,-1 -7,0 -2,-1 -1,-1 1,-2 -1,-1 -5,0 -7,-1 -4,0 -4,0 -2,1 -3,2 -4,2 -3,0 -1,1 -3,3 -2,4 0,1 1,1 1,2 1,2 1,2 2,1 1,0 2,0 4,0 2,0 3,1 2,1 1,0 3,2 1,1 0,2 1,1 4,2 1,1 2,0 1,1 1,1 2,0 1,0 1,0 3,0 0,-2 4,0 2,2 1,1 2,0 1,1 2,-2 1,-1 1,-1 2,0 1,-2 -1,-1 2,-1 4,0 1,1 1,1 2,1 1,0 1,1 1,0 2,0 1,0 1,0 3,-1 1,0 1,-1 2,0 1,1 2,1 1,0 1,1 3,0 6,-1 1,0 4,-1 1,-1 1,-1 4,-2 5,-1 2,-1|274,912 2,0 1,0 0,2 -3,1 -1,1 -1,0 0,3 -2,0 0,2 1,1 1,1 -1,1 -1,0 -2,0 0,2 2,1 1,1 2,1 1,1 3,0 2,0 1,0 2,-1 3,0 3,0 2,-1 2,0 2,1 1,1 1,1 2,1 1,0 1,1 4,0 5,0 2,0 2,1 2,0 4,0 1,2 1,1 1,0 4,0 0,-1 1,-2 1,0 0,-2 2,-2 -1,0 -3,1 -1,-1 0,-2 -3,0 -2,-2 -1,0 -2,-1 -1,0 -2,-1 -1,0 -1,-1 1,-2 1,-1 -1,-2 0,-1 -4,-1 -3,-1 1,-2 -1,-1 0,-1 1,-2 -2,0 -3,0 -3,1 -1,0 -1,-1 -1,1 -1,0 -2,1 -1,2 -1,0 -1,-1 -1,-2 -2,0 -1,0 -3,0 -1,0 -2,0 -1,-1 -1,0 -6,1 0,0|572,875 -4,0 -1,0 -3,0 -3,1 -2,2 -1,2 -3,-1 -2,1 -2,0 -2,0 -7,3 -5,0 -7,-1 -6,-2 -5,-3 -3,-2 -2,-1 -4,-1 -7,1 -7,1 -7,1 -4,-1 -6,1 -8,1 -6,0 -7,0 -1,0 0,2 3,1 1,2 -2,1 -3,1 -2,1 -1,-1 -1,-2 -3,-2 -1,0 -1,-3 0,-1 1,-2 1,-2 1,-2 1,-1 3,-1 1,-1 1,-1 4,-2 -1,-2 -2,-2 -1,0 -2,-2 -3,0 -2,-1 0,-1 0,-2 0,-1 0,-2 1,-1 0,-1 -1,-2 -2,-1 -1,1 -3,-1 -2,0 -1,0 -2,0 -1,0 -2,-1 -3,0 -1,0 -1,2 2,1 3,4 0,1 -2,1 -5,1 0,2 -2,0 -1,1 -2,3 -2,1 -2,0 -1,1 -2,1 -1,1 -1,0 -2,-1 1,-1 0,-2 -3,-2 0,-1 -3,-1 0,1 -2,1 -2,0 -4,3 -2,0 -1,0 -3,1 -1,0 -1,1 -3,3 -2,1 -2,1 0,1 1,2 2,0 2,-1 1,2 0,1 -3,3 -2,2 2,1 2,0 2,0 1,1 -3,2 -2,2 -2,1 -2,0 -1,1 1,1 0,2 1,2 2,2 1,2 0,1 -2,1 -2,0 -2,-1 1,2 -1,4 2,0 1,0 2,0 2,0 0,2 -1,0 -2,1 -3,1 -2,1 0,1 1,1 -2,1 0,2 -1,2 -1,2 1,0 0,2 2,0 1,1 2,0 1,0 2,0 1,1 1,0 1,1 2,1 1,0 2,0 3,0 2,0 4,0 2,-1 1,-1 1,-1 2,-1 2,-1 2,-2 1,-1 1,0 1,-2 -1,-1 1,-1 -1,-1 2,-1 2,-2 1,-1 2,0 3,-1 3,-1 1,0 1,-1 -1,-1 -1,-2 0,-1 1,0 2,-1 -2,-1 -1,0 2,-1 2,-1 3,-1 3,-1 3,-1 1,-1 2,0 3,3 3,0 3,-1 1,-1 0,-1 -2,0 -1,0 -1,-1 0,-1 1,-1 1,-1 1,-1 1,-1 0,0|250,878 -1,0 0,2 1,0 0,-2|635,1042 -1,2 -2,2 0,3 0,2 -1,2 -1,1 1,1 -2,2 -2,2 -1,1 0,1 1,2 1,1 3,0 2,0 2,0 2,-2 4,0 2,0 2,1 4,1 0,1 3,1 1,1 1,0 0,1 -5,3 -1,1 1,2 -5,2 -4,0 -4,0 -1,0 2,3 0,1 -1,1 -3,1 -5,2 -2,2 -1,2 -1,1 -3,1 2,2 -3,2 -4,2 0,1 1,1 3,3 -1,2 -1,1 -2,2 0,1 2,1 0,2 0,2 -2,0 -2,0 -1,1 -1,1 -2,1 -5,2 -4,0 -2,0 -1,0 -2,-1 -1,-1 -1,0 -1,0 -3,-1 -2,0 -1,2 0,1 1,1 -2,1 -4,1 -1,0 -2,0 -3,-1 -1,0 -1,1 -1,1 -2,1 -3,0 -2,-1 -3,2 1,2 0,1 -1,2 -1,2 -2,2 -1,2 -1,1 0,1 -2,1 -3,0 1,3 0,1 1,2 1,0 1,2 -1,1 -3,1 -2,2 -1,1 -3,1 0,1 1,1 2,1 1,2 4,1 -1,1 -1,1 0,1 -2,3 -1,1 0,3 1,1 0,1 -2,6 0,1 0,1 1,1 2,1 3,2 2,3 1,2 2,0 3,1 -2,2 -1,1|556,1211 7,4 5,3 1,0 2,1 2,1 2,1 5,2 5,3 5,3 2,1 2,1 5,3 1,1 6,4 4,2 1,2 8,3 5,4 2,1 2,3 1,2 2,2 -1,1 -1,1 -2,1 -2,2 -1,1 -4,2 -7,2 -5,2 -7,4 -1,1 4,1 4,3 2,1 1,2 0,1 -1,1 -2,2 -6,1 -1,2 -1,1 2,3 0,2 -6,1 -2,1 -1,1 -1,1 0,2 2,1 2,0 0,2 -3,0 1,3 1,2 1,2 -2,2 4,0 3,0 1,1 0,2 -3,4 -1,2 -2,2 -2,1 -1,1 -1,1 -1,2 -2,2 -2,1 -1,2 -4,3 -1,2 4,3 3,2 3,2 4,3 4,2 1,2 -4,2 -5,4 -4,2 -6,1 -7,2 -3,3 -2,3 1,1 5,4 0,2 -1,0 -5,0 2,2 3,0 4,1 1,0 3,1 1,0 4,4 10,2 3,1 2,1 1,1 1,2 0,1 4,-1 4,-1 4,0 1,0 1,1 -1,4|425,1105 1,0 2,0 1,0 2,-1 3,-1 4,-1 3,-1 2,0 4,0 4,0 2,-2 2,0 2,-2 -3,-4 0,-2 0,-1 1,-2 0,-1 -12,0 -10,1 -10,0 -10,0 -9,0 -6,1 -5,0 -1,0|418,1106 1,0|405,922 5,1 2,0 1,0 2,1 0,1 2,0 4,0 1,1 1,1 2,1 0,2 1,1 1,1 1,1 2,1 0,2 2,2 1,1 0,2 1,1 2,1 1,3 2,1 1,3 2,1 2,2 1,1 2,1 1,0 2,0 1,0 3,1 3,2 1,1|532,965 2,0 2,0 2,-1 2,-1 2,-2 1,-2 2,-2 0,-1 1,-2 1,-1 2,-2 1,-1 2,-3 2,-1 1,-1 1,-2 1,-1 2,-1 2,-1 2,-4 1,-2 1,-1 -1,-3 1,-1 -1,-2 -2,-4 0,-4 0,-1 0,-1 1,-3 0,-1 -1,-1 1,-2 1,-1|377,990 -1,2 -4,3 -1,1 0,2 -4,1 -2,0 -1,0 -2,1 -1,1 -1,-1 -2,-1 -2,1 -1,1 -1,1 -1,0 1,2 0,2 -1,0 -2,-1 -2,0 -6,3 -3,0 -2,1 0,-2 2,-2 -2,-1 -1,0 -1,-1 -2,-1 -1,0 -3,3 -3,2 -1,0 -1,1 0,1 2,1 1,1 -1,1 -1,1 -5,0 -1,-1 -1,1 -1,1 -2,0 -1,1 -2,0 -4,1 -1,0 -2,1 -1,2 -2,1 -3,0 0,-1 -2,-2 -2,0 2,3 1,2 1,3 -1,3 0,1 -4,1 0,3 -1,1 -1,1 -1,2 2,1 0,1 1,2 0,1 -1,1 0,1 -2,2 -1,1 0,2 1,2 -2,2 -5,3 -2,2 0,1 1,1 2,1 1,1 1,2 0,2 -2,5 0,1 -1,2 0,1|284,1077 0,2|455,1087 1,1 2,0 2,-1 1,0 1,-1 1,0 3,-1 1,-1 2,-1 1,-1 0,-2 0,-1 2,-7 4,-7 1,-3 1,-1 0,-3 0,-2 0,-2 -1,-1 -7,-2 -2,-1 -2,-1 -2,-2 0,-1 3,-2 2,-1 3,-1 1,-1 0,-2 -1,-1 1,-2 -2,-2 0,-2 1,-2|579,1380 -1,1 -1,1 0,2 4,2 3,1 3,2 -4,4 -7,2 -8,1 -3,1 -4,2 -3,2 -3,0 -3,0 -5,-2 -3,-1 -1,0 -4,1 -4,0 -3,0 -1,-1 -5,-2 -3,-2 -2,0 -1,-1 -1,-1 -2,-5 -2,-1 0,-1 0,-3 0,-2 -2,-2 -1,0 -2,0 -3,-1 -2,-1 -2,-1 -1,-2 -3,-1 -3,0 -2,1 -4,1 -3,0 -4,1 -3,1 -3,0 -2,-1 -1,-1 -5,0 -3,-1 -3,0 -2,1 -5,0 -6,0 -2,0 0,2 -2,1 -4,3 -2,1 -4,2 -4,2 -3,1 -4,-1 -2,0 -2,-1 2,-2 -2,-1 -3,0 -4,0 -2,0|144,1066 0,-2 0,-4 -2,-2 -1,-3 0,-2 -6,0 -1,-2 0,-1 3,-1 1,0 2,-1 1,-1 -1,-2 0,-1 -3,-1 -1,-1 -1,0 -1,-1 2,-1 -1,-2 -5,-1 -2,0 -1,0 -1,0 -3,1 -1,-1 -2,0 -1,-1 2,-3 1,-1 1,-1 1,-1 0,-2 -1,-1 -1,-3 0,-1 -3,-2 -2,0 1,-1 1,-1 1,0 0,-4 -2,0 -2,0 -1,0 -1,1 -1,1 2,2 0,1 1,2 0,1 -4,1 -1,1 -1,1 -4,-1 -2,1 -2,1 -1,1 0,1 -2,-1 -2,0 -1,2 -3,-2 -2,1 -2,0 -1,0 0,-2 -2,0 -2,1 -1,-2 -2,-1 -3,-1 -1,0 -1,1 -2,1 -2,0 -2,-1 -1,0 -1,1 -1,2|-44,702 0,-1 1,-2 5,-2 2,-2 -1,-2 1,-2 1,-1 0,-1 -1,-2 2,-3 0,-4 0,-3 0,-1 0,-2 1,-3 -1,-5 1,-2 2,-3 1,-3 1,-2 2,-2 1,0 2,-2 2,-1 1,-2 -2,-1 -2,-1 0,-2 0,-2 0,-1 -1,0 -4,0 -3,0 -3,0 -5,0 -4,0 -4,1 -1,0 -4,-1 -3,0 -2,-1 -1,-1 -9,0 -3,0 -2,0 -1,0 -2,0 2,0 2,0 1,0 -2,0 -3,0 -3,0 -3,0 -3,0 -5,0 -1,0 -4,0 -3,0 -2,0 -3,0 -2,0 -3,0 -3,0 -4,0 -4,0 -3,0 -1,0 -3,0 -2,0 -1,0 -1,0 -2,0 -2,0 -2,0 -5,0 -1,0 -2,0 -2,0 -2,0 -1,0 -2,0 -2,0 -5,0 -1,0 -5,0 -2,0 -1,0 -3,0 -2,0 -3,0 1,0 -3,0 -2,0 -2,0 -2,0 -2,0 -1,0 -1,0 -2,0 -1,0 -3,0 -1,0 -1,0 -2,0 -2,0 -1,0 -1,0 -2,0 -1,0 -2,0 -3,0 -1,0 -2,0 -2,0 -2,0 -1,0 -3,0 -2,0 -2,0 -3,0 2,0 -2,0 -1,0 -2,0 -2,0 -1,0 -1,0 -3,0 -1,0 -2,0 -1,0 -1,0 -1,0 -1,0 -2,0 -2,0 -1,0 -1,0 -2,0 -1,0 -2,0 -2,0 -2,0 -1,0 -1,0 -3,0 -1,0 -2,0 -2,0 -2,0 -1,0 -2,0 -2,0 -1,0 -2,0 0,0|407,857 -3,-1 -1,-1 -2,0 0,-1 1,-1 -1,-2 -2,-1 -2,0 -1,0 -1,1 0,1 -2,1 -1,-2 -1,-1 -2,-2 -1,-1 -1,-2 -1,-2 1,0 0,-2 0,-1 0,-2 0,-1|370,849 -1,1 1,2 1,0 0,1 -2,3 0,1 0,2 3,2 0,1 1,2 2,2 2,1 2,0 1,-1 1,0 0,1 -2,2 0,1 2,1 1,-1 1,1 1,0|148,875 1,0 0,0|447,846 3,-3 2,-1 2,-1 2,0 2,-4 1,-1 1,-1 -1,-3 0,-5 -2,0 -1,0 -1,-3 -3,-1 -2,-1 -2,0 -3,1 -1,0 -4,0 -1,-1 -3,-3 -3,-1 -1,-1 -3,1 -1,0 -2,-1 -3,0 -4,0 0,1 -2,0 -2,0 -2,3 -2,2 -1,2 0,2 0,1 -1,2 1,1 0,2 0,1 1,3 3,0 1,1 0,2 1,1 5,2 2,1 1,-1 1,-1 2,2 1,0 3,1|421,1121 5,3 7,2 2,1 6,1 6,0 5,0 3,0 3,0 1,0 2,-2 1,1 2,0 8,0 2,0 2,0 4,-1 2,-1 5,1 2,0 2,0 3,2 1,0 2,0 1,0 1,-1 2,-3 3,0 8,-1 1,-1 5,-2 2,-1 2,-1 2,-2 2,-1 2,-1 3,-1 1,0 -1,-2 -1,-2 -1,-2 1,-1 4,0 1,0 -2,-2 -1,-1 -6,0 -1,-1 -2,-2 -1,-1 -3,0 -2,-1 -1,-1 -2,-3 0,-1 0,-2 -2,-2 -1,-1 0,-2 1,0 2,0 1,-2 0,-1 -1,0 -3,0 -1,0 1,1 -1,1 -3,0 -1,0 -2,-1 -2,-1 -1,0 -4,0 -1,-3 -4,0 -2,-1 -4,-1 -1,0 -3,1 -2,0 -1,0 -2,0 -2,-1 -4,0 -1,1|191,945 0,-1 0,-1 1,-1 0,-1|486,1157 3,1 7,2 1,0 1,0 4,1 2,0 1,-1 1,1 1,0 4,-2 2,-1 1,0 2,-1 4,0 1,-1 3,-3 2,-1 3,-1 2,0 5,1 2,0 1,0 2,0 3,-1 3,-1 0,1|563,1123 -2,0 -3,-1 -4,-3 -1,-1 -1,-2 -3,0 -3,0 -5,1 -2,-1 -3,-2 -1,0 -3,0 0,-1|411,837 1,3 -2,3 0,1 -2,2 -1,0 -2,1 -1,2 -2,1 -1,1|209,937 3,0 2,0 1,-1 2,0 2,-1 1,1 1,1 2,2 2,1 4,0 2,0 2,0 1,0 1,0 4,1 4,1 0,-1 0,-2 2,-2 2,-2 1,-1 2,-1 2,0 2,0 2,0 7,-2 4,0 3,0 4,-1|150,875 0,1 0,2 2,1 1,2 0,1 -1,1 -5,0 -1,0 -3,1 -4,2 -1,1 -1,1 1,1 -1,2 2,2 1,1 0,3 -1,0 -1,0 -2,1 -1,0 -1,1 -1,2 1,2 2,0 1,0 3,1 1,0 1,3 1,1 -3,2 -1,2 -1,1 -2,1 0,2 3,1 1,2|378,919 -1,-1 -3,0 -1,0 -2,-2 -2,-1 -2,0 -1,0 -7,0 -3,1 -2,1 -1,0 -2,2 -3,0 -2,1 -1,2 -2,1 -2,1 -2,1 -2,2 -2,1 -4,2 -1,0|322,937 3,2 2,1 2,0 1,1 0,1 -1,1 -1,1 1,1 0,2 1,1 1,0 1,1 2,2 -1,1 -4,1 1,2 2,0 1,0 2,-1 1,0 3,0 2,0 0,1 0,2 1,1 0,1 1,1|400,794 1,0 2,-1 1,0 1,1 1,2 1,0 1,1 -2,2 2,1 1,1 2,0 1,1 1,0 1,3 1,2 0,1 1,1 2,0 1,1 1,1 1,1 -1,2 -1,2 0,1|458,827 2,0 3,-1 2,2 2,0 2,0 2,0 2,0 2,0 3,1 1,0 2,0 0,2 4,0 1,0 2,-1 2,1 1,-2 2,-1 2,-1 2,1 3,-1 3,-1 2,-1 3,0 3,1 1,0 2,0 2,1 2,-1 3,1 2,1 0,1 0,1 -1,2 -1,1 1,2 2,0 2,-1|152,952 -1,0 0,1 0,2 1,3 0,2 0,1 0,2 2,3 1,2 1,3 1,2 1,1 4,3 1,2 -1,1 -2,0 -4,1 -4,0 -1,1 -2,1 -3,0 -2,-1 -2,1 -1,-1 -1,2 -2,0 -2,-1 -1,0 -3,3 -1,1 -2,2 -1,0 -1,0|122,1002 0,-1 1,-2 1,-1 1,-1 1,0 3,-1 1,-1 -1,-1 -1,-2 -1,-2 0,-1 -1,1 -2,0 -2,0 -2,-1 -1,0 -1,1 -2,0 1,2 1,1 -2,2 -1,1 0,2 1,1 0,1 1,2 3,1 1,0 1,-1 2,3 3,1 0,2 0,1 -3,1 1,2 -2,1 -3,2 0,0|173,1098 4,0 7,-1 1,-1 2,0 3,1 2,0 3,0 0,0|34,850 1,1 -4,2 -1,0 -1,-1|51,1022 1,-2 0,-2 1,-2 2,-1 2,-1 1,1 2,0 2,1 2,-1 1,-2 0,-1 0,-1 5,-1 2,0 1,-3 1,-1 2,1 1,0 2,0 2,-1 2,-1 0,-1 1,-2 -1,-2 0,-1 4,0 4,0 2,1 1,2 1,1 2,0 -1,-4 1,-1 0,-1 0,-1 2,0 1,0 1,-1 1,-1 2,0 2,0 1,-2 2,-1 1,-1 2,1 2,0 2,0|339,972 -1,2 -1,0 -2,0 -1,1 -2,1 -1,0 -1,0 -2,-1 -4,0 -3,0 -5,2 -1,0 -1,0 -2,1 -4,1 -2,0 -1,0 -1,0 -1,0 -2,1 -1,0 -1,-3 -1,-2 -2,0 -2,-2 0,-1 -3,0 -1,1 -1,-1 -2,0 -3,0 -3,0 -1,2 -2,1 -1,0 -1,0|680,701 -2,1 -1,-1 -2,0 -1,-1 -2,0 -1,1 -2,-1 0,2 -1,1 -1,0 -2,0 -1,0 -2,0 -2,-1 -2,0 -1,0 -1,0 -2,1 0,0|380,897 -1,0 -2,1 -1,0 0,2 -1,1 -2,1 -3,0 -2,0 -1,0 -1,1 -2,0 -1,-1 -3,1 -2,-1 -2,0 -2,1 -3,-1 -2,1 -2,0 -2,0 -1,0 -1,0 -5,3 -2,-2 -5,0 -2,-1 -2,-2 -1,-1 -1,1 -2,0 -2,3 -2,0 -1,0 -2,0 -1,-4 0,-3 0,-2 3,-1 3,-3 1,-1 1,-3 1,-3 2,-2 2,-1 1,-1 3,-2 2,-2 4,-3 4,-3 3,-1 0,-2 3,-3 4,-3 1,-1 -1,-1|353,858 2,0 1,0 1,-1 1,-1 3,-1 1,-1 4,-2 3,-1";
+const COUNTRY_LBL=[["ALMANYA",51.2,10.2],["AVUSTURYA",47.6,14.6],["ÇEKYA",49.8,15.4],["İSVİÇRE",46.8,8.2],["İTALYA",43.5,12.3],["FRANSA",46.8,2.5],["HOLLANDA",52.4,5.6],["BELÇİKA",50.6,4.6],["POLONYA",52.1,19.4],["MACARİSTAN",47.1,19.4],["SLOVENYA",46.1,14.8],["SLOVAKYA",48.7,19.6],["DANİMARKA",56.0,9.3],["LÜKSEMBURG",49.75,6.1],["HIRVATİSTAN",45.3,16.0]];
+let EU=null;
+const dec=raw=>raw.split("|").map(r=>{let x=0,y=0;return r.split(" ").map((p,i)=>{const [a,b]=p.split(",").map(Number);if(i===0){x=a;y=b}else{x+=a;y+=b}return [x/20,y/20]})});
+function euRings(){if(EU)return EU;EU={land:dec(EU_LAND),bord:dec(EU_BORD)};return EU}
+function mapSvg(ids){
+  const pts=[SUBEN,...ids.map(id=>geo(A(id)))];
+  let la0=Math.min(...pts.map(p=>p.lat)),la1=Math.max(...pts.map(p=>p.lat)),lo0=Math.min(...pts.map(p=>p.lon)),lo1=Math.max(...pts.map(p=>p.lon));
+  const k=Math.cos((la0+la1)/2*Math.PI/180);
+  let w=Math.max((lo1-lo0)*k,3.5),h=Math.max(la1-la0,2.6);
+  const narrow=window.innerWidth<600,Wd=narrow?400:720,Ht=narrow?Math.round(Math.min(440,Math.max(320,Wd*h/w))):Math.round(Math.min(480,Math.max(300,Wd*h/w)));
+  // görünür alan: rota + %18 kenar payı, oran kutuya uydurulur
+  const cx=(lo0+lo1)/2*k, cy=(la0+la1)/2;
+  let vw=w*1.6, vh=h*1.6; if(vw/vh<Wd/Ht)vw=vh*Wd/Ht; else vh=vw*Ht/Wd;
+  const sc=Wd/vw;
+  const X=lon=>(lon*k-(cx-vw/2))*sc, Y=lat=>((cy+vh/2)-lat)*sc;
+  const E=euRings(),pth=(r,z)=>"M"+r.map(([lo,la])=>X(lo).toFixed(1)+","+Y(la).toFixed(1)).join("L")+(z?"Z":"");
+  const land=E.land.map(r=>pth(r,1)).join(""), bord=E.bord.map(r=>pth(r,0)).join("");
+  const clbl=COUNTRY_LBL.map(([n,la,lo])=>{const x=X(lo),y=Y(la);return x>20&&x<Wd-20&&y>14&&y<Ht-8?`<text x="${x}" y="${y}" text-anchor="middle" font-size="11" font-weight="700" letter-spacing="2" fill="var(--border)" font-family="Figtree, sans-serif">${n}</text>`:""}).join("");
+  const line=pts.map(p=>`${X(p.lon).toFixed(1)},${Y(p.lat).toFixed(1)}`).join(" ");
+  const lbl=(x,y,t,bold)=>`<text x="${x}" y="${y}" font-size="${bold?13:12}" font-weight="${bold?800:600}" fill="var(--fg)" stroke="var(--land)" stroke-width="3.5" paint-order="stroke" stroke-linejoin="round" font-family="Figtree, sans-serif">${esc(t)}</text>`;
+  return `<svg class="map" viewBox="0 0 ${Wd} ${Ht}" role="img" aria-label="Avrupa haritasında rota">
+   <rect width="${Wd}" height="${Ht}" fill="var(--sea)"/>
+   <path d="${land}" fill="var(--land)" stroke="var(--border)" stroke-width="1" stroke-linejoin="round"/>
+   <path d="${bord}" fill="none" stroke="var(--border)" stroke-width="1.2" stroke-dasharray="4 3" stroke-linejoin="round"/>
+   ${clbl}
+   <polyline points="${line}" fill="none" stroke="var(--accent)" stroke-width="3" stroke-dasharray="7 6" stroke-linejoin="round" stroke-linecap="round"/>
+   <g><rect x="${X(SUBEN.lon)-10}" y="${Y(SUBEN.lat)-10}" width="20" height="20" rx="4" fill="var(--fg)"/>${lbl(X(SUBEN.lon)+15,Y(SUBEN.lat)+5,"Suben",true)}</g>
+   ${ids.map((id,i)=>{const g=geo(A(id)),x=X(g.lon),y=Y(g.lat);return `<g><circle cx="${x}" cy="${y}" r="12" fill="var(--accent)" stroke="#fff" stroke-width="2"/><text x="${x}" y="${y+4}" text-anchor="middle" font-size="11" font-weight="800" fill="#fff" font-family="Figtree, sans-serif">${i+1}</text>${lbl(x+16,y+4,g.city)}</g>`}).join("")}
+  </svg>`;
+}
+function resultView(res){
+  if(res.error)return `<div class="msg bad" id="result">${esc(res.error)}</div>`;
+  if(!res.options.length)return `<div class="msg warn" id="result">Bekleyen adreslerin hiçbiri bu araca sığmıyor.</div>`;
+  const sel=Math.min(ui.plan.sel,res.options.length-1), r=res.options[sel], top=res.options[0];
+  const lbl=(i)=>res.options.length===1?"Önerilen":i===0?"En dolu":i===res.options.length-1?"En kısa yol":"Dengeli";
+  return `<div class="panel" style="display:grid;gap:18px" id="result">
+   <h2>${esc(ui.plan.name)}</h2>
+   ${mapSvg(r.order)}
+   <div class="stats"><div class="stat"><small>Yük</small><b>${fmtT(r.load)} / ${fmtT(res.cap)}</b></div><div class="stat"><small>Boş kalan</small><b>${fmtT(res.cap-r.load)} takım</b></div>
+    <div class="stat"><small>Adres</small><b>${r.order.length} / ${res.maxStops}</b></div><div class="stat"><small>Suben'den sonra</small><b>≈ ${fmtKm(r.km)}</b></div></div>
+   ${stopList(r.order,false)}
+   <button class="btn primary big" data-act="confirmPlan">Onayla ve kaydet</button>
+  </div>`;
+}
+/* ---------- ARAÇLAR ---------- */
+const STATUS={hazir:["Hazırlanıyor","p2"],yolda:["Yolda","p1"],bitti:["Teslim edildi","p3"]};
+function vehStats(v){const ids=v.stops;const load=ids.reduce((s,id)=>s+A(id).takim,0);const km=pathLen(ids.map(id=>geo(A(id))));const pay=ids.reduce((s,id)=>s+(+A(id).payment||0),0);const pk=ids.reduce((s,id)=>s+(+A(id).packages||0),0);return {load,km,pay,pk}}
+function vAraclar(){
+  const vs=S.vehicles.filter(v=>!v.deleted).slice().reverse();
+  return `${backBtn()}<div class="spread"><div><h2>Kaydedilen rotalar</h2></div></div>
+  <div class="cards">${vs.length?vs.map(v=>{const st=vehStats(v);return `<button class="vcard" data-act="open" data-id="${v.id}"><span class="bubble">${IC.nav}</span><div class="t">${esc(v.name)}</div></button>`}).join(""):""}</div>`;
+}
+function vArac(){
+  const v=S.vehicles.find(x=>x.id===ui.id);if(!v)return vAraclar();
+  const st=vehStats(v);const pool=S.addresses.filter(a=>a.status==="pool");
+  const over=st.load>v.cap+1e-9;
+  return `${backBtn("araclar","Kaydedilen rotalar")}<div class="spread"><div><h2>${esc(v.name)} · ${fmtT(v.cap)} takımlık</h2>
+</div></div>
+  ${v.stops.length?mapSvg(v.stops):""}
+  <div class="stats"><div class="stat"><small>Yük</small><b style="color:${over?"var(--bad)":"inherit"}">${fmtT(st.load)} / ${fmtT(v.cap)}</b></div><div class="stat"><small>Adres</small><b>${v.stops.length}</b></div>
+   <div class="stat"><small>Suben'den sonra</small><b>≈ ${fmtKm(st.km)}</b></div><div class="stat"><small>Toplam paket</small><b>${st.pk||"—"}</b></div><div class="stat"><small>Toplam kalan ödeme</small><b>${st.pay?st.pay.toLocaleString("tr-TR"):"—"}</b></div></div>
+  ${over?`<div class="msg bad">Yük aracın kapasitesini ${fmtT(st.load-v.cap)} takım aşıyor. Aracı silip yeniden ayarlayın.</div>`:""}
+  ${v.stops.length?stopList(v.stops,true):`<div class="panel empty">Bu araçta adres kalmadı.</div>`}
+  
+  ${v.stops.length?costView(v):""}
+  <div class="btnrow"><button class="btn primary" data-act="sheet">${IC.file}Sürücü belgesi (PDF)</button><button class="btn danger" data-act="ask-delV">Aracı sil</button></div>
+  <div class="delrow">${ui.confirmDel===2?`<span class="confirm">Son kez soruyorum: "${esc(v.name)}" silinecek, adresleri bekleyen adreslere dönecek. <button class="btn small danger" data-act="delV">Evet, sil</button><button class="btn small" data-act="cancel">Vazgeç</button></span>`
+   :ui.confirmDel===1?`<span class="confirm">Bu aracı silmek istediğine emin misin? <button class="btn small danger" data-act="ask-delV2">Evet</button><button class="btn small" data-act="cancel">Vazgeç</button></span>`
+   :""}</div>
+  ${ui.sheet?sheetView(v,st):""}`;
+}
+/* ---------- Araç hesabı: gider, net kalan ve ortak payları ----------
+   Gider = anlaşılan fiyat + (yapılan km − anlaşılan km) × km başına ekstra + ekstra giderler
+   Net kalan = toplanan kalan ödemeler − gider
+   Her ortak: kendi adreslerinden toplanan − (gider × araçtaki takım payı) */
+function costOf(v){const c=v.cost||{},st=vehStats(v);
+  const km=isNaN(parseNum(c.km))?Math.round(st.km):parseNum(c.km);
+  const baseKm=parseNum(c.baseKm)||0,price=parseNum(c.price)||0,rate=parseNum(c.rate)||0;
+  const extraKm=baseKm>0?Math.max(0,km-baseKm):0,kmCost=extraKm*rate;
+  const extras=(c.extras||[]).reduce((s,e)=>s+(parseNum(e.amount)||0),0);
+  const total=price+kmCost+extras,collected=st.pay,load=st.load;
+  const people=OWNERS.map(o=>{const ids=v.stops.filter(id=>A(id).owner===o.id);if(!ids.length)return null;
+    const t=ids.reduce((s,id)=>s+A(id).takim,0),got=ids.reduce((s,id)=>s+(parseNum(A(id).payment)||0),0),share=load?t/load:0;
+    return {o,n:ids.length,t,share,got,costShare:total*share,final:got-total*share}}).filter(Boolean);
+  return {km,extraKm,rate,kmCost,price,extras,total,collected,net:collected-total,people}}
+function costSummary(v){const r=costOf(v);const sg=n=>(n<0?"−":"")+money(Math.abs(n));
+  return `<dl class="fixed">
+    <div><dt>Toplanan ödeme</dt><dd>${money(r.collected)}</dd></div>
+    <div><dt>Sabit fiyat</dt><dd>${money(r.price)}</dd></div>
+    <div><dt>Ekstra km${r.extraKm?` <span class="xs">(${r.extraKm.toLocaleString("tr-TR")} km × ${money(r.rate)})</span>`:""}</dt><dd>${money(r.kmCost)}</dd></div>
+    <div><dt>Ekstra giderler</dt><dd>${money(r.extras)}</dd></div>
+    <div><dt>Toplam gider</dt><dd>${money(r.total)}</dd></div>
+    <div class="net"><dt>Net kalan</dt><dd>${sg(r.net)}</dd></div>
+  </dl>
+  <div class="shares">${r.people.map(p=>`<div class="share"><div class="sh-top"><b>${p.o.name}</b><span>%${Math.round(p.share*100)} · ${fmtT(p.t)} takım · ${p.n} adres</span></div>
+    <div class="sh-row"><span>Toplanan</span><b>${money(p.got)}</b></div>
+    <div class="sh-row"><span>Gider payı</span><b>−${money(p.costShare)}</b></div>
+    <div class="sh-row fin"><span>Alacağı</span><b>${sg(p.final)}</b></div></div>`).join("")}</div>`}
+function costView(v){const c=v.cost||{},ex=c.extras||[],km=isNaN(parseNum(c.km))?Math.round(vehStats(v).km):c.km;
+  const f=(k,label,val)=>`<label>${label}<input type="text" inputmode="decimal" data-cost="${k}" value="${esc(val??"")}"></label>`;
+  return `<div class="panel cost"><h3>Araç hesabı</h3>
+   <div class="sf cost-f">${f("baseKm","Anlaşılan km",c.baseKm)}${f("price","Sabit fiyat",c.price)}${f("rate","Ekstra km başına ücret",c.rate)}${f("km","Yapılan km",km)}</div>
+   <div class="cost-q">Ekstra giderler</div>
+   ${ex.map((e,i)=>`<div class="xrow"><input type="text" data-extra="label" data-i="${i}" value="${esc(e.label)}" aria-label="Gider adı"><input type="text" inputmode="decimal" data-extra="amount" data-i="${i}" value="${esc(e.amount)}" aria-label="Tutar"><button class="btn small" data-act="delExtra" data-i="${i}" aria-label="Kaldır">×</button></div>`).join("")}
+   <button class="btn toggle" data-act="addExtra">${IC.plus}Gider ekle</button>
+   <div id="costSum">${costSummary(v)}</div></div>`}
+function sheetView(v,st){
+  return `<div id="sheet"><h3 style="margin-bottom:8px">Sürücü belgesi önizlemesi</h3>
+  <div class="sheet-wrap"><div class="sheet">
+   <div class="meta"><h4>Araç adı: ${esc(v.name)}</h4></div>
+   <table><thead><tr><th>Sıra</th><th>Posta kodu</th><th>Kimin</th><th>Ürün üstündeki kod</th><th class="r">Paket sayısı</th><th class="r">Kalan ödeme</th></tr></thead><tbody>
+   ${v.stops.map((id,i)=>{const a=A(id),g=geo(a);return `<tr><td><b>${i+1}</b></td><td><b>${a.cc}-${esc(a.code)}</b> ${esc(g.city)}</td><td>${owner(a.owner).name}</td><td>${a.productCode?`<span class="code">${esc(a.productCode)}</span>`:"—"}</td><td class="r">${a.packages||"—"}</td><td class="r">${a.payment?(+a.payment).toLocaleString("tr-TR"):"—"}</td></tr>`}).join("")}
+   <tr><td colspan="4"><b>Toplam</b></td><td class="r"><b>${st.pk||"—"}</b></td><td class="r"><b>${st.pay?st.pay.toLocaleString("tr-TR"):"—"}</b></td></tr></tbody></table>
+  </div></div>
+  <div class="pdfrow"><button class="btn primary" data-act="pdfDown">${IC.down}PDF indir</button><button class="btn" data-act="pdfShare">${IC.share}WhatsApp'tan gönder</button></div>
+  ${ui.pdfMsg?`<div class="msg ${ui.pdfMsg.bad?"bad":"ok"}" style="text-align:center">${esc(ui.pdfMsg.text)}</div>`:""}</div>`;
+}
+/* ---------- Gerçek PDF (pdfmake; Roboto yazı tipi Türkçe harfleri destekler) ---------- */
+let pdfLib=null;
+function loadPdfLib(){if(pdfLib)return pdfLib;const add=(src,sri)=>new Promise((ok,no)=>{const s=document.createElement("script");s.src=src;s.integrity=sri;s.crossOrigin="anonymous";s.onload=ok;s.onerror=no;document.head.appendChild(s)});
+  const base="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.10/";pdfLib=add(base+"pdfmake.min.js","sha384-vseuUuO/VRMn00lXYd5m/Pk4l/7RjMqhXGf6G0RALy+On0txYb39dQsUQDAd7q5L").then(()=>add(base+"vfs_fonts.js","sha384-1y8s2U/Jjn4/oeCEBcfYH3M6XeQtcg4LRmluN92FS69UgtLzoyhn3swew8Ynj8Ai")).catch(e=>{pdfLib=null;throw e});return pdfLib}
+function pdfDoc(v){const st=vehStats(v),money=n=>n?(+n).toLocaleString("tr-TR"):"—";
+  const H=t=>({text:t,bold:true,fillColor:"#f1f1f3",fontSize:9.5});
+  const rows=v.stops.map((id,i)=>{const a=A(id),g=geo(a);return [{text:String(i+1),bold:true},{text:[{text:`${a.cc}-${a.code} `,bold:true},g.city]},owner(a.owner).name,{text:a.productCode||"—",bold:!!a.productCode},{text:String(a.packages||"—"),alignment:"right"},{text:money(a.payment),alignment:"right"}]});
+  rows.push([{text:"Toplam",bold:true,colSpan:4},"","","",{text:String(st.pk||"—"),bold:true,alignment:"right"},{text:money(st.pay),bold:true,alignment:"right"}]);
+  return {pageSize:"A4",pageMargins:[32,36,32,36],defaultStyle:{font:"Roboto",fontSize:10.5},
+    content:[{text:`Araç adı: ${v.name}`,fontSize:20,bold:true,margin:[0,0,0,10]},
+     {table:{headerRows:1,widths:[28,"*",62,"*",52,62],body:[[H("Sıra"),H("Posta kodu"),H("Kimin"),H("Ürün üstündeki kod"),{...H("Paket sayısı"),alignment:"right"},{...H("Kalan ödeme"),alignment:"right"}],...rows]},
+      layout:{hLineWidth:(i,n)=>i===1?1:.5,vLineWidth:()=>0,hLineColor:i=>i===1?"#999":"#ccc",paddingTop:()=>6,paddingBottom:()=>6}}]}}
+function pdfName(v){return "Surucu-belgesi-"+String(v.name).replace(/[^\p{L}\p{N}]+/gu,"-").replace(/^-|-$/g,"")+".pdf"}
+async function pdfAction(share,btn){const v=S.vehicles.find(x=>x.id===ui.id);if(!v)return;
+  btn.disabled=true;const say=(text,bad)=>{ui.pdfMsg=text?{text,bad}:null;render()};
+  try{await loadPdfLib()}catch(e){btn.disabled=false;return say("PDF hazırlanamadı. İnternet bağlantını kontrol et.",true)}
+  const doc=pdfMake.createPdf(pdfDoc(v)),name=pdfName(v);
+  if(!share){doc.download(name);return say("PDF indirildi.")}
+  doc.getBlob(async blob=>{const file=new File([blob],name,{type:"application/pdf"});
+    if(navigator.canShare&&navigator.canShare({files:[file]})){
+      try{await navigator.share({files:[file],title:name});say("Gönderildi.")}catch(e){if(e.name==="AbortError")say("");else say("Paylaşılamadı. PDF indir ile indirip WhatsApp'tan ekleyebilirsin.",true)}}
+    else{doc.download(name);say("Bu cihaz doğrudan paylaşmayı desteklemiyor. PDF indirildi, WhatsApp'ta ataç simgesiyle ekleyebilirsin.")}});
+}
+function vGecmis(){
+  const day=t=>new Date(t).toDateString(),today=day(Date.now()),yest=day(Date.now()-864e5);
+  const dayName=t=>{const d=day(t);return d===today?"Bugün":d===yest?"Dün":new Date(t).toLocaleDateString("tr-TR",{day:"numeric",month:"long",weekday:"long"})};
+  const groups=[];S.log.forEach(l=>{const k=day(l.t);let g=groups[groups.length-1];if(!g||g.k!==k){g={k,name:dayName(l.t),items:[]};groups.push(g)}g.items.push(l)});
+  return `${backBtn()}<div><h2>Kayıt geçmişi</h2></div>
+  ${groups.map(g=>`<div class="lgroup"><h3>${g.name}</h3><div class="loglist">${g.items.map(l=>`<div class="lrow"><span class="ltime">${new Date(l.t).toLocaleTimeString("tr-TR",{hour:"2-digit",minute:"2-digit"})}</span><div class="lbody"><b>${esc(l.who||"—")}</b><span>${esc(l.txt)}</span></div></div>`).join("")}</div></div>`).join("")}`;
+}
+
+
+/* ---------- Çizim ve olaylar ---------- */
+function render(){renderTop();const m=document.getElementById("app");
+  m.innerHTML=!S.user?vLogin():view==="home"?vHome():view==="havuz"?vHavuz():view==="ekle"?vEkle():view==="ayarla"?vAyarla():view==="araclar"?vAraclar():view==="arac"?vArac():vGecmis();
+  if(ui.scrollSheet){ui.scrollSheet=false;document.getElementById("sheet")?.scrollIntoView({behavior:"smooth"})}}
+const app=document.getElementById("app");
+app.addEventListener("click",e=>{
+  const b=e.target.closest("[data-act]");if(!b)return;const act=b.dataset.act,id=b.dataset.id;
+  if(b.tagName==="INPUT")return; // checkbox: change olayı
+  const f=ui.form,p=ui.plan;
+  switch(act){
+    case "go":go(b.dataset.to);break;
+    case "who":ui.login.who=id;ui.login.err=null;render();break;
+    case "login":tryLogin();break;
+    case "slack":p.slack=b.dataset.v;render();break;
+    case "selopt":p.sel=+b.dataset.v;render();break;
+    case "go-ekle":go("ekle");break; case "go-ayarla":go("ayarla");break; case "go-araclar":go("araclar");break;
+    case "ask-trash":ui.confirmTrash=id;render();break; case "cancel":ui.confirmTrash=ui.confirmReset=ui.confirmDel=ui.confirmUn=null;render();break;
+    case "trash":{const a=A(id);a.status="trash";logIt(`${a.cc} ${a.code} (${owner(a.owner).name}) silindi`);ui.confirmTrash=null;save();render();break}
+    case "restore":{const a=A(id);a.status="pool";logIt(`${a.cc} ${a.code} çöp kutusundan havuza geri alındı`);save();render();break}
+    case "owner":f.owner=id;f.code=document.getElementById("code").value;render();break;
+    case "pickcc":setCountry(id);break;
+    case "check":checkCode();break;
+    case "qt":f.takim=b.dataset.v;render();break;
+    case "cap":p.cap=b.dataset.v;render();break;
+    case "usePri":p.usePri=b.dataset.v==="1";if(!p.usePri)p.pri=[];render();break;
+    case "useEx":p.useEx=b.dataset.v==="1";if(!p.useEx)p.ex=[];render();break;
+    case "plan":{const cap=+String(document.getElementById("cap")?.value??p.cap).replace(",",".")||+p.cap,stops=parseInt(document.getElementById("stops")?.value??p.stops)||+p.stops;
+      p.cap=String(cap);p.stops=String(stops);
+      if(!(cap>0)||!(stops>0)){p.result={error:"Araç takımı ve adres sayısı 0'dan büyük olmalı."};render();break}
+      p.result=planOptions(cap,stops,p.pri,p.ex,+p.slack);p.sel=p.result.options?p.result.options.length-1:0;p.show=true;render();window.scrollTo({top:0});break}
+    case "editPlan":p.show=false;render();window.scrollTo({top:0});break;
+    case "confirmPlan":{const res=p.result,r=res.options[Math.min(p.sel,res.options.length-1)];const v={id:uid(),name:p.name.trim(),cap:res.cap,stops:r.order,status:"hazir",created:Date.now()};
+      r.order.forEach(i=>{A(i).status="vehicle";A(i).vehicle=v.id});S.vehicles.push(v);logIt(`${v.name} ayarlandı: ${r.order.length} adres, ${fmtT(r.load)}/${fmtT(res.cap)} takım, ≈ ${fmtKm(r.km)}`);save();go("home");break}
+    case "open":go("arac",{id});break;
+    case "sheet":ui.sheet=true;ui.pdfMsg=null;ui.scrollSheet=true;render();break;
+    case "addExtra":{const v=S.vehicles.find(x=>x.id===ui.id);v.cost=v.cost||{};(v.cost.extras=v.cost.extras||[]).push({label:"",amount:""});save();render();
+      const xs=document.querySelectorAll('[data-extra="label"]');xs[xs.length-1]?.focus();break}
+    case "delExtra":{const v=S.vehicles.find(x=>x.id===ui.id);const e=v.cost.extras.splice(+b.dataset.i,1)[0];if(e&&(e.label||e.amount))logIt(`${v.name}: ekstra gider kaldırıldı (${e.label||"adsız"} ${e.amount||""})`);save();render();break}
+    case "pdfDown":case "pdfShare":pdfAction(b.dataset.act==="pdfShare",b);break;
+    case "up":case "down":{const v=S.vehicles.find(x=>x.id===ui.id);const i=v.stops.indexOf(id),j=act==="up"?i-1:i+1;[v.stops[i],v.stops[j]]=[v.stops[j],v.stops[i]];logIt(`${v.name}: sıra elle değiştirildi`);save();render();break}
+    case "reroute":{const v=S.vehicles.find(x=>x.id===ui.id);v.stops=bestOrder(v.stops).order;logIt(`${v.name}: rota yeniden hesaplandı`);save();render();break}
+    case "unassign":{const v=S.vehicles.find(x=>x.id===ui.id);const a=A(id);v.stops=v.stops.filter(x=>x!==id);a.status="pool";delete a.vehicle;logIt(`${a.cc} ${a.code} ${v.name} aracından kaldırıldı`);ui.confirmUn=null;save();render();break}
+    case "addToV":{const sel=document.getElementById("addToV").value;if(!sel)break;const v=S.vehicles.find(x=>x.id===ui.id);const a=A(sel);a.status="vehicle";a.vehicle=v.id;v.stops=bestOrder(v.stops.concat(sel)).order;logIt(`${a.cc} ${a.code} ${v.name} aracına sonradan eklendi`);save();render();break}
+    case "ask-delV":ui.confirmDel=1;render();break;
+    case "ask-delV2":ui.confirmDel=2;render();break;
+    case "setOwner":{const a=A(id);if(a.owner!==b.dataset.v){a.owner=b.dataset.v;logIt(`${a.cc} ${a.code}: kimin → ${owner(a.owner).name}`);save();render()}break}
+    case "ask-unassign":ui.confirmUn=id;render();break;
+    case "delV":{const v=S.vehicles.find(x=>x.id===ui.id);v.stops.forEach(i=>{A(i).status="pool";delete A(i).vehicle});v.deleted=true;v.stops=[];logIt(`${v.name} silindi, adresleri bekleyen adreslere döndü`);save();go("araclar");break}
+  }
+});
+app.addEventListener("change",e=>{
+  const t=e.target;
+  if(t.dataset.act==="pick"){const p=ui.plan;const arr=p[t.dataset.key];if(t.checked)arr.push(t.dataset.id);else p[t.dataset.key]=arr.filter(x=>x!==t.dataset.id);
+    const c=document.getElementById("cap"),s=document.getElementById("stops");if(c)p.cap=c.value;if(s)p.stops=s.value;render();return}
+  if(t.id==="vstatus"){const v=S.vehicles.find(x=>x.id===ui.id);v.status=t.value;logIt(`${v.name} durumu: ${STATUS[t.value][0]}`);save();render();return}
+  if(t.dataset.cost||t.dataset.extra){const v=S.vehicles.find(x=>x.id===ui.id);if(!v)return;v.cost=v.cost||{};const raw=t.value.trim();
+    const num=k=>{const n=parseNum(raw);return raw===""?"":isNaN(n)?null:String(n)};
+    const names={baseKm:"anlaşılan km",price:"sabit fiyat",rate:"ekstra km başına ücret",km:"yapılan km"};
+    if(t.dataset.cost){const k=t.dataset.cost,val=num(k);if(val===null){t.value=v.cost[k]??"";return}
+      if(String(v.cost[k]??"")!==val){v.cost[k]=val;logIt(`${v.name}: ${names[k]} → ${val||"boş"}`)}
+      t.value=val;
+      if(k==="km"&&val==="")t.value=Math.round(vehStats(v).km)}
+    else{const e=v.cost.extras[+t.dataset.i];const k=t.dataset.extra;const val=k==="amount"?num(k):raw;if(val===null){t.value=e[k];return}
+      if(e[k]!==val){e[k]=val;logIt(`${v.name}: ekstra gider ${k==="amount"?"tutarı":"adı"} → ${val||"boş"}`)}t.value=val;}
+    save();const box=document.getElementById("costSum");if(box)box.innerHTML=costSummary(v);return}
+  if(t.dataset.edit){const a=A(t.dataset.id);const k=t.dataset.edit;let val=t.value;
+    if(k==="takim"){val=Math.round((+String(val).replace(",",".")||a.takim)*10)/10}
+    if(k==="payment"||k==="packages"){const n=parseNum(val);val=String(val).trim()===""?"":isNaN(n)?a[k]:String(n)}
+    const old=a[k];a[k]=val;if(String(old)!==String(val))logIt(`${a.cc} ${a.code}: ${({owner:"kimin",takim:"takım",packages:"paket sayısı",productCode:"ürün kodu",payment:"kalan ödeme"})[k]} → ${k==="owner"?owner(val).name:val||"boş"}`);
+    save();render();}
+});
+app.addEventListener("input",e=>{const t=e.target;
+  if(ui.form&&t.id==="code"){ui.form.code=t.value}
+  if(ui.form&&t.id==="takim"){ui.form.takim=t.value;const s2=!!ui.form.check?.ok,s3=s2&&+String(t.value).replace(",",".")>0,st=t.closest(".step");if(st){st.classList.toggle("done",s3);st.classList.toggle("active",s2&&!s3);st.querySelector(".n").textContent=s3?"✓":"3"}const btn=document.querySelector('#addForm [type=submit]');if(btn)btn.disabled=!(ui.form.owner&&ui.form.check?.ok&&+String(t.value).replace(",",".")>0)}
+  if(ui.plan&&t.id==="cap")ui.plan.cap=t.value; if(ui.plan&&t.id==="stops")ui.plan.stops=t.value;
+  if(ui.plan&&t.id==="vname")ui.plan.name=t.value;
+  if(ui.plan&&(t.id==="cap"||t.id==="stops"||t.id==="vname")){syncPlanSteps();const b=document.querySelector('[data-act="plan"].big');if(b)b.disabled=!(planReady(ui.plan)&&S.addresses.some(x=>x.status==="pool"))}
+});
+app.addEventListener("keydown",e=>{if(e.key==="Enter"&&e.target.id==="pw"){e.preventDefault();tryLogin();return}if(e.key==="Enter"&&e.target.id==="code"){e.preventDefault();document.getElementById("takim")?.focus()}});
+app.addEventListener("focusout",e=>{if(e.target.id!=="code"||!ui.form)return;const next=e.relatedTarget;
+  const raw=e.target.value.toUpperCase().replace(/[\s-]/g,"");if(ui.form.check&&raw===ui.form.code&&(ui.form.check.ok||ui.form.check.multi))return;
+  checkCode();if(next&&next.id){const el=document.getElementById(next.id);if(el)el.focus()}else if(next&&next.dataset.act==="pickcc"){}});
+app.addEventListener("submit",e=>{e.preventDefault();const f=ui.form;if(!f.check&&document.getElementById("code").value)checkCode();const t=Math.round(+String(f.takim).replace(",",".")*10)/10;
+  if(!(f.owner&&f.check?.ok&&t>0))return;
+  const a={id:uid(),cc:f.cc,code:f.code,owner:f.owner,takim:t,status:"pool",created:Date.now(),packages:"",payment:"",productCode:""};
+  S.addresses.push(a);logIt(`Yeni adres: ${a.cc} ${a.code} (${owner(a.owner).name}), ${fmtT(t)} takım`);save();
+  ui={form:{owner:f.owner,cc:f.cc,code:"",takim:"",check:null},added:`Kaydedildi: ${a.code} ${geo(a).city}`};render();document.getElementById("code")?.focus()});
+
+(async()=>{document.getElementById("app").innerHTML='<div class="login"><h2>Yükleniyor…</h2></div>';
+  const {data}=await sb.auth.getSession();const who=data&&data.session&&ownerByEmail(data.session.user.email);
+  if(who)await enter(who,false);else render()})();
+</script>
