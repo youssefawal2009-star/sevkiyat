@@ -2,7 +2,7 @@
 <html lang="tr">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob: https://tile.openstreetmap.org; connect-src 'self' blob: data: https://paojawgjfckmavwzwzhl.supabase.co wss://paojawgjfckmavwzwzhl.supabase.co https://api.zippopotam.us https://nominatim.openstreetmap.org https://routing.openstreetmap.de https://router.project-osrm.org; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob: https://tile.openstreetmap.org; connect-src 'self' blob: data: https://paojawgjfckmavwzwzhl.supabase.co wss://paojawgjfckmavwzwzhl.supabase.co https://api.zippopotam.us https://nominatim.openstreetmap.org https://routing.openstreetmap.de https://router.project-osrm.org https://valhalla1.openstreetmap.de; object-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="referrer" content="no-referrer">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#ffffff">
@@ -109,7 +109,7 @@ td input[type=text],td input[type=number],td select{font-size:15px;padding:8px 1
 .cost-q{font-weight:700;font-size:16px}
 .xrow{display:grid;grid-template-columns:1fr 120px 46px;gap:8px}.xrow input{height:46px;font-size:16px;padding:10px 12px;border-radius:14px}.xrow .btn{height:46px;font-size:20px;padding:0}
 .fixed .xs{text-transform:none;letter-spacing:0;font-weight:600}
-.fixed .net{background:var(--accent-soft)}.fixed .net dt,.fixed .net dd{color:var(--accent)}.fixed .net dd{font-size:20px;font-weight:800}
+.fixed .netrow{background:var(--accent-soft)}.fixed .netrow dt,.fixed .netrow dd{color:var(--accent)}.fixed .netrow dd{font-size:20px;font-weight:800}.cost .fixed+.shares,.cost .shares+.fixed{margin-top:14px}
 .shares{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px;margin-top:4px}
 .share{border:1.5px solid var(--line);border-radius:22px;padding:14px 16px;display:grid;gap:6px}
 .sh-top{display:grid;gap:2px;margin-bottom:4px}.sh-top b{font-size:17px}.sh-top span{color:var(--muted);font-weight:600;font-size:13px}
@@ -192,7 +192,7 @@ td input[type=text],td input[type=number],td select{font-size:15px;padding:8px 1
 .fixed .ct{color:var(--muted);font-weight:600}
 .sa{display:flex;gap:8px;flex-wrap:wrap;margin-top:6px}
 @media (max-width:600px){.sf{grid-template-columns:1fr 1fr;gap:10px}.sf .wide-m{grid-column:1/-1}.sf input,.sf select{padding:10px}.sc{padding:12px 14px}
- .stats{grid-template-columns:1fr 1fr;gap:8px}.stat{padding:12px 14px;border-radius:18px}.stat b{font-size:20px}}
+ .stats{grid-template-columns:1fr 1fr;gap:8px}.stats .stat:last-child:nth-child(odd){grid-column:1/-1}.stat{padding:12px 14px;border-radius:18px}.stat b{font-size:20px}}
 .sa .danger{margin-left:auto}
 .pdfrow{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:14px}.pdfrow .btn{height:58px;font-size:16px}
 @media (max-width:520px){.pdfrow{grid-template-columns:1fr}}
@@ -327,7 +327,27 @@ const KM_KEY="sevkiyat-km", ROUTERS=["https://routing.openstreetmap.de/routed-ca
 const pk=p=>p.lat.toFixed(4)+","+p.lon.toFixed(4);
 let KM={};try{KM=JSON.parse(localStorage.getItem(KM_KEY))||{}}catch(e){}
 function saveKm(){try{const k=Object.keys(KM);if(k.length>60000)k.slice(0,k.length-60000).forEach(x=>delete KM[x]);localStorage.setItem(KM_KEY,JSON.stringify(KM))}catch(e){}}
-const dist=(p,q)=>{if(p===q)return 0;const v=KM[pk(p)+">"+pk(q)];return v!=null?v:hav(p,q)*ROAD};
+/* Lorry km: Valhalla kamyon profili (anahtarsız), bizim lorry'nin ölçüleriyle. Bu ölçüdeki aracın geçemediği köprü/yol kullanılmaz.
+   Gelen her güzergahın bacakları telefonda saklanır ve hesaplarda araba km'sinden önce kullanılır. */
+const LORRY={weight:12,axle_load:8,height:3.8,width:2.55,length:10}; // ortalama lorry (her gün farklı araç gelebiliyor): ton, ton, metre
+const TK_KEY="sevkiyat-lorry-km-"+Object.values(LORRY).join("-"),TRUCK="https://valhalla1.openstreetmap.de";
+try{localStorage.removeItem("sevkiyat-tir-km")}catch(e){}
+let TK={};try{TK=JSON.parse(localStorage.getItem(TK_KEY))||{}}catch(e){}
+function saveTk(){try{localStorage.setItem(TK_KEY,JSON.stringify(TK))}catch(e){}}
+const dist=(p,q)=>{if(p===q)return 0;const k=pk(p)+">"+pk(q);const t=TK[k];if(t!=null)return t;const v=KM[k];return v!=null?v:hav(p,q)*ROAD};
+function poly6(str){const out=[];let i=0,la=0,lo=0;while(i<str.length){for(const c of [0,1]){let r=0,sh=0,b;do{b=str.charCodeAt(i++)-63;r|=(b&31)<<sh;sh+=5}while(b>=32);const d=r&1?~(r>>1):r>>1;if(c===0)la+=d;else lo+=d}out.push([la/1e6,lo/1e6])}return out}
+const TR_GEO={};
+/* Noktalar sırasıyla kamyon güzergahı: bacak km'lerini kaydeder, harita çizgisini döndürür */
+async function truckRoute(pts){const key=pts.map(pk).join(";");if(TR_GEO[key])return TR_GEO[key];
+  // Posta kodunun orta noktası kamyonun giremediği sokağa düşerse: yakındaki yollara, sonra ana yollara bağlan
+  const extras=[{},{radius:1000},{search_filter:{min_road_class:"tertiary"}}];
+  const ctl=new AbortController(),t=setTimeout(()=>ctl.abort(),45000);
+  try{let j;for(const ex of extras){const body={locations:pts.map((p,i)=>({lat:+p.lat.toFixed(5),lon:+p.lon.toFixed(5),...(i?ex:{})})),costing:"truck",costing_options:{truck:LORRY},units:"kilometers",directions_type:"none"};
+      const r=await fetch(TRUCK+"/route?json="+encodeURIComponent(JSON.stringify(body)),{signal:ctl.signal});if(r.ok){j=await r.json();break}if(r.status!==400)throw new Error(r.status)}
+    if(!j)throw new Error("kamyon yolu bulunamadı");
+    const line=[];j.trip.legs.forEach((l,i)=>{TK[pk(pts[i])+">"+pk(pts[i+1])]=l.summary.length;const g=poly6(l.shape);g.forEach((c,n)=>{if(n%8===0||n===g.length-1)line.push(c)})});
+    saveTk();TR_GEO[key]=line;return line}finally{clearTimeout(t)}}
+async function truckKm(ids){try{await truckRoute(routePts(ids));return true}catch(e){console.warn("kamyon km alınamadı",e);return false}}
 async function osrm(path){let last;for(const base of ROUTERS){try{const ctl=new AbortController(),t=setTimeout(()=>ctl.abort(),15000);
   const r=await fetch(base+path,{signal:ctl.signal});clearTimeout(t);if(!r.ok)throw new Error(r.status);const j=await r.json();if(j.code!=="Ok")throw new Error(j.code);return j}catch(e){last=e}}throw last}
 /* Verilen noktalar arasındaki eksik km'leri tek seferde çeker */
@@ -342,7 +362,13 @@ async function ensureKm(points){
     try{const j=await osrm(`/table/v1/driving/${pts.map(p=>p.lon.toFixed(5)+","+p.lat.toFixed(5)).join(";")}?annotations=distance&sources=${src.join(";")}&destinations=${dst.join(";")}`);
       j.distances.forEach((row,i)=>row.forEach((m,k)=>{if(m!=null)KM[pk(A1[i])+">"+pk(B1[k])]=m/1000}))}catch(e){console.warn("km alınamadı",e);ok=false}}
   saveKm();return ok}
-function pathLen(pts){let s=0,prev=SUBEN;for(const p of pts){s+=dist(prev,p);prev=p}return s}
+/* Belgeler her araçta Münih'e bırakılır (zorunlu durak). Suben'den sonra en uygun yere (adreslerin arasına) konur, km'ye dahildir. */
+const BELGE={lat:48.1374,lon:11.5755,city:"München"};
+function docAt(pts){let bi=0,bc=1e18,prev=SUBEN;for(let i=0;i<=pts.length;i++){const nx=pts[i];const c=dist(prev,BELGE)+(nx?dist(BELGE,nx)-dist(prev,nx):0);if(c<bc){bc=c;bi=i}prev=nx}return bi}
+const withDoc=pts=>{const i=docAt(pts);return [...pts.slice(0,i),BELGE,...pts.slice(i)]};
+const routePts=ids=>[SUBEN,...withDoc(ids.map(id=>geo(A(id))))];
+function legLen(pts){let s=0,prev=SUBEN;for(const p of pts){s+=dist(prev,p);prev=p}return s}
+const pathLen=pts=>legLen(withDoc(pts));
 /* Suben'den başlayıp son adreste biten en kısa sıra: en yakın komşu + 2-opt + taşıma iyileştirmesi */
 function bestOrder(ids){
   const pts=ids.map(id=>({id,...geo(A(id))}));
@@ -410,7 +436,16 @@ function planOptions(cap,maxStops,forced,excluded,slack){
     if(opts.some(o=>Math.abs(o.km-r.km)<1&&o.w===r.w))continue;
     if(opts.length&&r.km>=opts[opts.length-1].km-5)continue; // daha az dolu ama kısa değilse anlamsız
     opts.push(r)}
-  return {cap,maxStops,options:opts.map(o=>{const r=bestOrder(fixed.concat(o.set));return {order:r.order,km:r.km,load:o.w/10}})};
+  // Araçta yer ve uğrak hakkı kaldıysa sığan adres dışarıda bırakılmaz: en az km ekleyen önce girer
+  function fill(set){set=[...set];
+    for(;;){if(set.length>=K)break;let best=null,bc=1e18;const base=kmOf(set);
+      for(const a of cand){if(set.includes(a.id)||loadOf(set)+fw+W(a.takim)>C)continue;const c=kmOf(set.concat(a.id))-base;if(c<bc){bc=c;best=a.id}}
+      if(!best)break;set.push(best)}
+    return set}
+  const seen=new Set(),out=[];
+  for(const o of opts){const s=fill(o.set),key=[...s].sort().join();if(seen.has(key))continue;seen.add(key);
+    const r=bestOrder(fixed.concat(s));out.push({order:r.order,km:r.km,load:(loadOf(s)+fw)/10})}
+  return {cap,maxStops,options:out};
 }
 /* ---------- İkonlar ---------- */
 const I=(d)=>`<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${d}</svg>`;
@@ -608,11 +643,14 @@ function planReady(f){return planSteps(f).every(x=>x==="done")}
 function stopList(ids,editable){
   let prev=SUBEN,left=ids.reduce((s,id)=>s+A(id).takim,0);const total=left;
   const head=`<li class="stop start"><span class="sn sq">S</span><div class="sc"><div class="sl"><b>Suben gümrük</b><span class="big">${fmtT(total)} <small>takım yüklü</small></span></div></div></li>`;
+  const di=docAt(ids.map(id=>geo(A(id))));
+  const docLi=`<li class="stop start"><span class="sn sq">B</span><div class="sc"><div class="sl"><b>Belge teslimi</b><span class="ct">${BELGE.city}</span></div></div></li>`;
   const items=ids.map((id,i)=>{const a=A(id),g=geo(a),d=dist(prev,g);prev=g;left-=a.takim;
     const top=`<div class="sl"><span><span class="pc">${esc(a.code)}</span> <span class="ct">${esc(g.city)}</span></span><span class="big">${fmtT(a.takim)} <small>takım</small></span></div>
       <div class="sm"><span>${owner(a.owner).name}</span></div>`;
-    if(!editable)return `<li class="stop"><span class="sn">${i+1}</span><div class="sc">${top}</div></li>`;
-    return `<li class="stop"><span class="sn">${i+1}</span><div class="sc">
+    const doc=i===di?docLi:"";
+    if(!editable)return doc+`<li class="stop"><span class="sn">${i+1}</span><div class="sc">${top}</div></li>`;
+    return doc+`<li class="stop"><span class="sn">${i+1}</span><div class="sc">
       <dl class="fixed">
         <div><dt>Posta kodu</dt><dd><span class="pc">${esc(a.code)}</span> <span class="ct">${esc(g.city)}</span></dd></div>
         <div><dt>Kimin</dt><dd>${owner(a.owner).name}</dd></div>
@@ -624,7 +662,7 @@ function stopList(ids,editable){
         <label class="wide-m">Ürünün üstündeki kod<input type="text" autocapitalize="characters" data-edit="productCode" data-id="${id}" value="${esc(a.productCode)}"></label>
       </div>
       
-    </div></li>`}).join("");
+    </div></li>`}).join("")+(di===ids.length?docLi:"");
   return `<ol class="stops">${head}${items}</ol>`;
 }
 function routeRows(ids,editable,v){
@@ -654,7 +692,7 @@ function mapSvg(ids){return `<div class="map lmap" data-ids="${ids.join(",")}" r
 let maps=[];const ROUTE_GEO={};
 function destroyMaps(){maps.forEach(m=>{try{m.remove()}catch(e){}});maps=[]}
 function mountMaps(){if(!window.L)return;document.querySelectorAll(".lmap").forEach(el=>{
-  const ids=el.dataset.ids?el.dataset.ids.split(","):[];const pts=[SUBEN,...ids.map(id=>geo(A(id)))];
+  const ids=el.dataset.ids?el.dataset.ids.split(","):[];const pts=routePts(ids),stopPts=ids.map(id=>geo(A(id)));
   const touch=window.matchMedia("(pointer:coarse)").matches;
   const m=L.map(el,{zoomControl:true,scrollWheelZoom:false,dragging:!touch,tap:false,attributionControl:true});maps.push(m);
   m.attributionControl.setPrefix(false);
@@ -663,11 +701,14 @@ function mountMaps(){if(!window.L)return;document.querySelectorAll(".lmap").forE
   const key=pts.map(pk).join(";");
   let line=L.polyline(ROUTE_GEO[key]||pts.map(p=>[p.lat,p.lon]),{color:"#f54e00",weight:4,opacity:.9,dashArray:ROUTE_GEO[key]?null:"7 6"}).addTo(m);
   L.marker([SUBEN.lat,SUBEN.lon],{icon:L.divIcon({className:"",html:'<span class="mk mk-s">S</span>',iconSize:[26,26],iconAnchor:[13,13]}),keyboard:false,title:"Suben"}).addTo(m);
+  L.marker([BELGE.lat,BELGE.lon],{icon:L.divIcon({className:"",html:'<span class="mk mk-s">B</span>',iconSize:[26,26],iconAnchor:[13,13]}),keyboard:false,title:"Belge teslimi: München"}).addTo(m);
   ids.forEach((id,i)=>{const g=geo(A(id));L.marker([g.lat,g.lon],{icon:L.divIcon({className:"",html:`<span class="mk">${i+1}</span>`,iconSize:[26,26],iconAnchor:[13,13]}),keyboard:false,title:`${A(id).code} ${g.city}`}).addTo(m)});
   m.fitBounds(L.latLngBounds(pts.map(p=>[p.lat,p.lon])),{padding:[34,34],maxZoom:10});
-  if(!ROUTE_GEO[key]&&ids.length)osrm(`/route/v1/driving/${pts.map(p=>p.lon.toFixed(5)+","+p.lat.toFixed(5)).join(";")}?overview=simplified&geometries=geojson`)
-    .then(j=>{ROUTE_GEO[key]=j.routes[0].geometry.coordinates.map(([lo,la])=>[la,lo]);if(maps.includes(m)){line.remove();line=L.polyline(ROUTE_GEO[key],{color:"#f54e00",weight:4,opacity:.9}).addTo(m)}})
-    .catch(e=>console.warn("güzergah alınamadı",e));
+  if(!ROUTE_GEO[key]&&ids.length){const before=Math.round(pathLen(stopPts));
+    truckRoute(pts).catch(e=>{console.warn("kamyon güzergahı alınamadı",e);return osrm(`/route/v1/driving/${pts.map(p=>p.lon.toFixed(5)+","+p.lat.toFixed(5)).join(";")}?overview=simplified&geometries=geojson`).then(j=>j.routes[0].geometry.coordinates.map(([lo,la])=>[la,lo]))})
+    .then(g=>{ROUTE_GEO[key]=g;if(maps.includes(m)){line.remove();line=L.polyline(g,{color:"#f54e00",weight:4,opacity:.9}).addTo(m)}
+      if(Math.round(pathLen(stopPts))!==before)softRender()})
+    .catch(e=>console.warn("güzergah alınamadı",e))}
 })}
 function resultView(res){
   if(res.error)return `<div class="msg bad" id="result">${esc(res.error)}</div>`;
@@ -699,7 +740,7 @@ function vArac(){
 </div></div>
   ${v.stops.length?mapSvg(v.stops):""}
   <div class="stats"><div class="stat"><small>Yük</small><b style="color:${over?"var(--bad)":"inherit"}">${fmtT(st.load)} / ${fmtT(v.cap)}</b></div><div class="stat"><small>Adres</small><b>${v.stops.length}</b></div>
-   <div class="stat"><small>Suben'den sonra</small><b>≈ ${fmtKm(st.km)}</b></div><div class="stat"><small>Toplam paket</small><b>${st.pk||"—"}</b></div><div class="stat"><small>Toplam kalan ödeme</small><b>${st.pay?st.pay.toLocaleString("tr-TR"):"—"}</b></div></div>
+   <div class="stat"><small>Suben'den sonra</small><b>≈ ${fmtKm(st.km)}</b></div></div>
   ${over?`<div class="msg bad">Yük aracın kapasitesini ${fmtT(st.load-v.cap)} takım aşıyor. Aracı silip yeniden ayarlayın.</div>`:""}
   ${v.stops.length?stopList(v.stops,true):`<div class="panel empty">Bu araçta adres kalmadı.</div>`}
   
@@ -726,17 +767,19 @@ function costOf(v){const c=v.cost||{},st=vehStats(v);
   return {km,extraKm,rate,kmCost,price,extras,total,collected,net:collected-total,people}}
 function costSummary(v){const r=costOf(v);const sg=n=>(n<0?"−":"")+money(Math.abs(n));
   return `<dl class="fixed">
-    <div><dt>Toplanan ödeme</dt><dd>${money(r.collected)}</dd></div>
+    <div><dt>Bu aracın kalan ödemeden toplayacağı para</dt><dd>${money(r.collected)}</dd></div>
     <div><dt>Sabit fiyat</dt><dd>${money(r.price)}</dd></div>
     <div><dt>Ekstra km${r.extraKm?` <span class="xs">(${r.extraKm.toLocaleString("tr-TR")} km × ${money(r.rate)})</span>`:""}</dt><dd>${money(r.kmCost)}</dd></div>
     <div><dt>Ekstra giderler</dt><dd>${money(r.extras)}</dd></div>
     <div><dt>Toplam gider</dt><dd>${money(r.total)}</dd></div>
-    <div class="net"><dt>Net kalan</dt><dd>${sg(r.net)}</dd></div>
   </dl>
   <div class="shares">${r.people.map(p=>`<div class="share"><div class="sh-top"><b>${p.o.name}</b><span>%${Math.round(p.share*100)} · ${fmtT(p.t)} takım · ${p.n} adres</span></div>
     <div class="sh-row"><span>Toplanan</span><b>${money(p.got)}</b></div>
     <div class="sh-row"><span>Gider payı</span><b>−${money(p.costShare)}</b></div>
-    <div class="sh-row fin"><span>Alacağı</span><b>${sg(p.final)}</b></div></div>`).join("")}</div>`}
+    <div class="sh-row fin"><span>Alacağı</span><b>${sg(p.final)}</b></div></div>`).join("")}</div>
+  <dl class="fixed">
+    <div class="netrow"><dt>Net kalan</dt><dd>${sg(r.net)}</dd></div>
+  </dl>`}
 function costView(v){const c=v.cost||{},ex=c.extras||[],km=isNaN(parseNum(c.km))?Math.round(vehStats(v).km):c.km;
   const f=(k,label,val)=>`<label>${label}<input type="text" inputmode="decimal" data-cost="${k}" value="${esc(val??"")}"></label>`;
   return `<div class="panel cost"><h3>Araç hesabı</h3>
@@ -745,12 +788,12 @@ function costView(v){const c=v.cost||{},ex=c.extras||[],km=isNaN(parseNum(c.km))
    ${ex.map((e,i)=>`<div class="xrow"><input type="text" data-extra="label" data-i="${i}" value="${esc(e.label)}" aria-label="Gider adı"><input type="text" inputmode="decimal" data-extra="amount" data-i="${i}" value="${esc(e.amount)}" aria-label="Tutar"><button class="btn small" data-act="delExtra" data-i="${i}" aria-label="Kaldır">×</button></div>`).join("")}
    <button class="btn toggle" data-act="addExtra">${IC.plus}Gider ekle</button>
    <div id="costSum">${costSummary(v)}</div></div>`}
-function sheetView(v,st){
+function sheetView(v,st){const docTr=`<tr><td><b>B</b></td><td colspan="5"><b>Belge teslimi</b> ${BELGE.city}</td></tr>`;
   return `<div id="sheet"><h3 style="margin-bottom:8px">Sürücü belgesi önizlemesi</h3>
   <div class="sheet-wrap"><div class="sheet">
    <div class="meta"><h4>Araç adı: ${esc(v.name)}</h4></div>
    <table><thead><tr><th>Sıra</th><th>Posta kodu</th><th>Kimin</th><th>Ürün üstündeki kod</th><th class="r">Paket sayısı</th><th class="r">Kalan ödeme</th></tr></thead><tbody>
-   ${v.stops.map((id,i)=>{const a=A(id),g=geo(a);return `<tr><td><b>${i+1}</b></td><td><b>${a.cc}-${esc(a.code)}</b> ${esc(g.city)}</td><td>${owner(a.owner).name}</td><td>${a.productCode?`<span class="code">${esc(a.productCode)}</span>`:"—"}</td><td class="r">${a.packages||"—"}</td><td class="r">${a.payment?(+a.payment).toLocaleString("tr-TR"):"—"}</td></tr>`}).join("")}
+   ${v.stops.map((id,i)=>{const a=A(id),g=geo(a);return (i===docAt(v.stops.map(x=>geo(A(x))))?docTr:"")+`<tr><td><b>${i+1}</b></td><td><b>${a.cc}-${esc(a.code)}</b> ${esc(g.city)}</td><td>${owner(a.owner).name}</td><td>${a.productCode?`<span class="code">${esc(a.productCode)}</span>`:"—"}</td><td class="r">${a.packages||"—"}</td><td class="r">${a.payment?(+a.payment).toLocaleString("tr-TR"):"—"}</td></tr>`}).join("")}${docAt(v.stops.map(x=>geo(A(x))))===v.stops.length?docTr:""}
    <tr><td colspan="4"><b>Toplam</b></td><td class="r"><b>${st.pk||"—"}</b></td><td class="r"><b>${st.pay?st.pay.toLocaleString("tr-TR"):"—"}</b></td></tr></tbody></table>
   </div></div>
   <div class="pdfrow"><button class="btn primary" data-act="pdfDown">${IC.down}PDF indir</button><button class="btn" data-act="pdfShare">${IC.share}WhatsApp'tan gönder</button></div>
@@ -763,6 +806,7 @@ function loadPdfLib(){if(pdfLib)return pdfLib;const add=(src,sri)=>new Promise((
 function pdfDoc(v){const st=vehStats(v),money=n=>n?(+n).toLocaleString("tr-TR"):"—";
   const H=t=>({text:t,bold:true,fillColor:"#f1f1f3",fontSize:9.5});
   const rows=v.stops.map((id,i)=>{const a=A(id),g=geo(a);return [{text:String(i+1),bold:true},{text:[{text:`${a.cc}-${a.code} `,bold:true},g.city]},owner(a.owner).name,{text:a.productCode||"—",bold:!!a.productCode},{text:String(a.packages||"—"),alignment:"right"},{text:money(a.payment),alignment:"right"}]});
+  rows.splice(docAt(v.stops.map(x=>geo(A(x)))),0,[{text:"B",bold:true},{text:[{text:"Belge teslimi ",bold:true},BELGE.city],colSpan:5},"","","",""]);
   rows.push([{text:"Toplam",bold:true,colSpan:4},"","","",{text:String(st.pk||"—"),bold:true,alignment:"right"},{text:money(st.pay),bold:true,alignment:"right"}]);
   return {pageSize:"A4",pageMargins:[32,36,32,36],defaultStyle:{font:"Roboto",fontSize:10.5},
     content:[{text:`Araç adı: ${v.name}`,fontSize:20,bold:true,margin:[0,0,0,10]},
@@ -780,7 +824,7 @@ async function pdfAction(share,btn){const v=S.vehicles.find(x=>x.id===ui.id);if(
     else{doc.download(name);say("Bu cihaz doğrudan paylaşmayı desteklemiyor. PDF indirildi, WhatsApp'ta ataç simgesiyle ekleyebilirsin.")}});
 }
 /* Kayıt geçmişi bu andan itibaren gösterilir (öncesi deneme kayıtları: silinmedi, veritabanında ve yedekte duruyor) */
-const LOG_FROM=1794147598815; // 2026-11-08 17:19
+const LOG_FROM=1794168578792; // 2026-11-08 23:09
 function vGecmis(){
   const day=t=>new Date(t).toDateString(),today=day(Date.now()),yest=day(Date.now()-864e5);
   const dayName=t=>{const d=day(t);return d===today?"Bugün":d===yest?"Dün":new Date(t).toLocaleDateString("tr-TR",{day:"numeric",month:"long",weekday:"long"})};
@@ -820,12 +864,15 @@ app.addEventListener("click",e=>{
       p.cap=String(cap);p.stops=String(stops);
       if(!(cap>0)||!(stops>0)){p.result={error:"Araç takımı ve adres sayısı 0'dan büyük olmalı."};render();break}
       if(p.busy)break;p.busy=true;b.disabled=true;b.lastChild.textContent="Hesaplanıyor…";
-      ensureKm([SUBEN,...S.addresses.filter(a=>a.status==="pool"&&!p.ex.includes(a.id)).map(geo)]).finally(()=>{p.busy=false;if(ui.plan!==p)return;
-        p.result=planOptions(cap,stops,p.pri,p.ex,+p.slack);p.sel=p.result.options?p.result.options.length-1:0;p.show=true;render();window.scrollTo({top:0})});break}
+      ensureKm([SUBEN,BELGE,...S.addresses.filter(a=>a.status==="pool"&&!p.ex.includes(a.id)).map(geo)]).finally(()=>{if(ui.plan!==p){p.busy=false;return}
+        p.result=planOptions(cap,stops,p.pri,p.ex,+p.slack);p.sel=p.result.options?p.result.options.length-1:0;
+        const opts=p.result.options||[];
+        Promise.all(opts.map(o=>truckKm(o.order))).then(()=>{opts.forEach(o=>o.km=pathLen(o.order.map(id=>geo(A(id)))))}).finally(()=>{
+          p.busy=false;if(ui.plan!==p)return;p.show=true;render();window.scrollTo({top:0})})});break}
     case "editPlan":p.show=false;render();window.scrollTo({top:0});break;
     case "confirmPlan":{const res=p.result,r=res.options[Math.min(p.sel,res.options.length-1)];const v={id:uid(),name:p.name.trim(),cap:res.cap,stops:r.order,status:"hazir",created:Date.now()};
       r.order.forEach(i=>{A(i).status="vehicle";A(i).vehicle=v.id});S.vehicles.push(v);logIt(`${v.name} ayarlandı: ${r.order.length} adres, ${fmtT(r.load)}/${fmtT(res.cap)} takım, ≈ ${fmtKm(r.km)}`);save();go("home");break}
-    case "open":{go("arac",{id});const v=S.vehicles.find(x=>x.id===id);if(v)ensureKm([SUBEN,...v.stops.map(i=>geo(A(i)))]).then(()=>{if(view==="arac"&&ui.id===id)softRender()});break}
+    case "open":{go("arac",{id});const v=S.vehicles.find(x=>x.id===id);if(v)ensureKm([SUBEN,BELGE,...v.stops.map(i=>geo(A(i)))]).then(()=>{if(view==="arac"&&ui.id===id)softRender()});break}
     case "sheet":ui.sheet=true;ui.pdfMsg=null;ui.scrollSheet=true;render();break;
     case "addExtra":{const v=S.vehicles.find(x=>x.id===ui.id);v.cost=v.cost||{};(v.cost.extras=v.cost.extras||[]).push({label:"",amount:""});save();render();
       const xs=document.querySelectorAll('[data-extra="label"]');xs[xs.length-1]?.focus();break}
